@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Members Register</title>
+    <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+    #logo {
+      text-align: center;
+      background-color: #ffffff;
+    }
+    #logo img {
+      width: 100%;
+      height: 80px;
+      object-fit: cover;
+    }
+    #banner {
+      background-color: #0078D7;
+      color: white;
+      text-align: center;
+      padding: 12px 0;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    #container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    select, input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background-color: #0078D7;
+      color: white;
+    }
+  </style>
+  </head>
+  <body>
+    <!-- Section 1: Logo and Banner -->
+    <div id="logo"> <img src="Crawford.jpg" alt="Crawford Logo"> </div>
+    <div id="banner">Members Register - Public Version 1.0</div>
+    <div id="container">
+      <!-- Section 2: Claim Reference Dropdown -->
+      <h2>🎯 Select Claim Reference</h2>
+      <select id="claimSelector">
+        <option value="ALL" selected="selected">ALL Members</option>
+        <option value="REPS">Claim Representatives ONLY</option>
+        <option value="A27|AdamsI">A27 AdamsI</option>
+        <option value="A460|AdamsMF">A460 AdamsMF</option>
+        <option value="A625|AdamH">A625 AdamH</option>
+        <option value="A661|ArnoldF">A661 ArnoldF</option>
+        <option value="A679|AlexanderJJ">A679 AlexanderJJ</option>
+        <option value="A88|AbrahamsK">A88 AbrahamsK</option>
+        <option value="B321|BenjaminWC">B321 BenjaminWC</option>
+        <option value="G126|GallantH">G126 GallantH</option>
+        <option value="G32|GirieE">G32 GirieE</option>
+        <option value="G34|GabrielL">G34 GabrielL</option>
+        <option value="H238|HlokoanaR">H238 HlokoanaR</option>
+        <option value="H425|Hoosain">H425 Hoosain</option>
+        <option value="H431|HassanA">H431 HassanA</option>
+        <option value="J101|JacobsR">J101 JacobsR</option>
+        <option value="J159|JohnstonAK">J159 JohnstonAK</option>
+        <option value="J63|JansenS">J63 JansenS</option>
+        <option value="K392|KamaloodienR">K392 KamaloodienR</option>
+        <option value="K85|Klaaste &amp; St Clair">K85 Klaaste &amp; St
+          Clair</option>
+        <option value="L110|LowersCE">L110 LowersCE</option>
+        <option value="M2116|MatiZ">M2116 MatiZ</option>
+        <option value="N20|NellS">N20 NellS</option>
+        <option value="N23|NeumanH">N23 NeumanH</option>
+        <option value="O20|OliverBS">O20 OliverBS</option>
+        <option value="O51|OsmanE">O51 OsmanE</option>
+        <option value="S1404|SibekoY">S1404 SibekoY</option>
+        <option value="S250|SiljeurRS">S250 SiljeurRS</option>
+        <option value="S426|SamsodienA">S426 SamsodienA</option>
+        <option value="S457A|MtwanaJ">S457A MtwanaJ</option>
+        <option value="S713|SuleloS">S713 SuleloS</option>
+        <option value="S840|SadienD">S840 SadienD</option>
+        <option value="S881|SplintersP">S881 SplintersP</option>
+        <option value="T62|TaliepMS">T62 TaliepMS</option>
+        <option value="V202|Van Der Schyff">V202 Van Der Schyff</option>
+        <option value="W18|Brache &amp; Michaels">W18 Brache &amp;
+          Michaels</option>
+      </select>
+      <!-- Section 3: Filtered Member Table -->
+      <table id="memberTable">
+        <thead> <tr>
+            <th>#</th>
+            <th>Claim Ref</th>
+            <th>Claim Name</th>
+            <th>Surname</th>
+            <th>First Names</th>
+            <th>Identity</th>
+            <th>Provenance</th>
+            <th>Type</th>
+            <th>Share</th>
+            <th>WhatsApp</th>
+            <th>Email</th>
+            <th>Address</th>
+            <th>Legal Docs</th>
+          </tr>
+        </thead> <tbody>
+        </tbody>
+      </table>
+    </div>
+    <!-- End of #container -->
+    <script>
+    const API = "https://api.sheety.co/9e808d4656db0991ecb346916d7717e4/crawfordRegister/memberData";
+    let allMembers = [];
+    let filteredMembers = [];
+
+    function loadMembers() {
+      fetch(API)
+        .then(res => res.json())
+        .then(data => {
+          allMembers = data.memberData;
+          applyFilter();
+        });
+    }
+
+    function applyFilter() {
+      const val = document.getElementById("claimSelector").value;
+      const tbody = document.querySelector("#memberTable tbody");
+      tbody.innerHTML = "";
+
+      if (val === "REPS") {
+        filteredMembers = allMembers.filter(m => m.mType === "Claim Representative");
+      } else if (val !== "ALL") {
+        const [ref] = val.split("|");
+        filteredMembers = allMembers.filter(m => m.claimReference === ref);
+      } else {
+        filteredMembers = [...allMembers];
+      }
+
+      filteredMembers.forEach((m, i) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${m.claimReference || ""}</td>
+          <td>${m.claimName || ""}</td>
+          <td>${m.mSurname || ""}</td>
+          <td>${m.mFirstnames || ""}</td>
+          <td>${m.mIdentity || ""}</td>
+          <td>${m.mProvenance || ""}</td>
+          <td>${m.mType || ""}</td>
+          <td>${m.shareFraction || ""}</td>
+          <td>${m.mWhatsapp || ""}</td>
+          <td>${m.mEmail || ""}</td>
+          <td>${m.mAddress || ""}</td>
+          <td>${m.mLegaldocs || "Nothing Yet"}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    document.getElementById("claimSelector").addEventListener("change", applyFilter);
+
+    loadMembers();
+  </script>
+  </body>
+</html>
