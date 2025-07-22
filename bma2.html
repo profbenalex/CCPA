@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Shopcart Viewer</title>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    button { margin-bottom: 15px; padding: 8px 16px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    #status { font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Shopcart Sheet Viewer</h2>
+  <button onclick="triggerLoad()">Load Sheet</button>
+  <p id="status">⏳ Waiting for trigger...</p>
+  <table id="dataTable"></table>
+
+  <script>
+    const SHEET_ID = '1eHJv2prpt8f_GK6YllTt5hkKif_LSz0XHyNxsOYTzys';
+    const CLIENT_ID = '663392775210-mchjv70e0eogm4sbdu1dog3l9qss3mmh.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyCVKn3FuOZKDAxGwr444lOUnyPTBoikv_k';
+    const RANGE = 'shopcart!A:C';
+    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+    function triggerLoad() {
+      document.getElementById('status').innerText = '🔄 Initializing...';
+      gapi.load('client:auth2', () => {
+        gapi.auth2.init({
+          client_id: CLIENT_ID,
+          cookie_policy: 'single_host_origin'
+        })
+        .then(() => gapi.auth2.getAuthInstance().signIn({ scope: SCOPES }))
+        .then(() => {
+          gapi.client.setApiKey(API_KEY);
+          return gapi.client.load('https://sheets.googleapis.com/$discovery/rest?version=v4');
+        })
+        .then(readSheet)
+        .catch(err => {
+          document.getElementById('status').innerText = '❌ Initialization failed';
+          console.error(err);
+        });
+      });
+    }
+
+    function readSheet() {
+      gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: RANGE
+      }).then(response => {
+        const rows = response.result.values;
+        if (!rows || rows.length === 0) {
+          document.getElementById('status').innerText = '⚠️ No data found';
+          return;
+        }
+        document.getElementById('status').innerText = `✅ Loaded ${rows.length} rows`;
+        let tableHTML = '<tr><th>Name</th><th>Surname</th><th>Item</th></tr>';
+        rows.forEach(row => {
+          tableHTML += `<tr><td>${row[0] || ''}</td><td>${row[1] || ''}</td><td>${row[2] || ''}</td></tr>`;
+        });
+        document.getElementById('dataTable').innerHTML = tableHTML;
+      }).catch(err => {
+        document.getElementById('status').innerText = '❌ Sheet read failed';
+        console.error(err);
+      });
+    }
+  </script>
+</body>
+</html>
