@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Row to Shopcart</title>
+</head>
+<body>
+  <h2>Add a new item to Shopcart</h2>
+
+  <label>Name: <input type="text" id="name" /></label><br/>
+  <label>Surname: <input type="text" id="surname" /></label><br/>
+  <label>Item: <input type="text" id="item" /></label><br/>
+  <button id="addBtn">Add Row</button>
+
+  <p id="message"></p>
+
+  <script>
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbyKdakFHVHLFcn-XKEncvuX5Gz2GanHRnNODdw8UvYPlYM4z5tFCRcDeGZxNw05G4xq/exec';
+
+    document.getElementById('addBtn').onclick = function() {
+      const name = document.getElementById('name').value.trim();
+      const surname = document.getElementById('surname').value.trim();
+      const item = document.getElementById('item').value.trim();
+
+      if (!name || !surname || !item) {
+        document.getElementById('message').textContent = 'Please fill in all fields.';
+        return;
+      }
+
+      fetch(webAppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, surname, item })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          document.getElementById('message').textContent = 'Row added successfully!';
+          document.getElementById('name').value = '';
+          document.getElementById('surname').value = '';
+          document.getElementById('item').value = '';
+        } else {
+          document.getElementById('message').textContent = 'Error: ' + data.message;
+        }
+      })
+      .catch(error => {
+        document.getElementById('message').textContent = 'Error: ' + error.message;
+      });
+    };
+  </script>
+</body>
+</html>
