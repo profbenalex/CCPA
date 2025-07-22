@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CCPA Members ADMIN</title>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .banner {
+      background-color: #003366;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    select {
+      margin-top: 10px;
+      padding: 6px;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    #rowCounter {
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+
+    button {
+      margin: 2px;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="Crawford.jpg" alt="Crawford Header Image">
+  </header>
+  <div class="banner">Members Register – Admin Version 1.0</div>
+
+  <div class="content">
+    <p><strong>🎯 Select Claim Reference:</strong></p>
+    <select id="claimSelector">
+      <option value="ALL" selected>ALL Members</option>
+      <option value="REPS">Claim Representatives ONLY</option>
+      <option value="A27|AdamsI">A27 AdamsI</option>
+      <option value="A460|AdamsMF">A460 AdamsMF</option>
+      <option value="A625|AdamH">A625 AdamH</option>
+      <option value="A661|ArnoldF">A661 ArnoldF</option>
+      <option value="A679|AlexanderJJ">A679 AlexanderJJ</option>
+      <option value="A88|AbrahamsK">A88 AbrahamsK</option>
+      <option value="B321|BenjaminWC">B321 BenjaminWC</option>
+      <option value="G126|GallantH">G126 GallantH</option>
+      <option value="G32|GirieE">G32 GirieE</option>
+      <option value="G34|GabrielL">G34 GabrielL</option>
+      <option value="H238|HlokoanaR">H238 HlokoanaR</option>
+      <option value="H425|Hoosain">H425 Hoosain</option>
+      <option value="H431|HassanA">H431 HassanA</option>
+      <option value="J101|JacobsR">J101 JacobsR</option>
+      <option value="J159|JohnstonAK">J159 JohnstonAK</option>
+      <option value="J63|JansenS">J63 JansenS</option>
+      <option value="K392|KamaloodienR">K392 KamaloodienR</option>
+      <option value="K85|Klaaste & St Clair">K85 Klaaste & St Clair</option>
+      <option value="L110|LowersCE">L110 LowersCE</option>
+      <option value="M2116|MatiZ">M2116 MatiZ</option>
+      <option value="N20|NellS">N20 NellS</option>
+      <option value="N23|NeumanH">N23 NeumanH</option>
+      <option value="O20|OliverBS">O20 OliverBS</option>
+      <option value="O51|OsmanE">O51 OsmanE</option>
+      <option value="S1404|SibekoY">S1404 SibekoY</option>
+      <option value="S250|SiljeurRS">S250 SiljeurRS</option>
+      <option value="S426|SamsodienA">S426 SamsodienA</option>
+      <option value="S457A|MtwanaJ">S457A MtwanaJ</option>
+      <option value="S713|SuleloS">S713 SuleloS</option>
+      <option value="S840|SadienD">S840 SadienD</option>
+      <option value="S881|SplintersP">S881 SplintersP</option>
+      <option value="T62|TaliepMS">T62 TaliepMS</option>
+      <option value="V202|Van Der Schyff">V202 Van Der Schyff</option>
+      <option value="W18|Brache & Michaels">W18 Brache & Michaels</option>
+    </select>
+
+    <p id="rowCounter"></p>
+
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Claim Ref</th>
+          <th>Claim Name</th>
+          <th>Surname</th>
+          <th>Firstnames</th>
+          <th>Type</th>
+          <th>Share</th>
+          <th>Provenance</th>
+          <th>Legal Docs Status</th>
+          <th>mDoclink</th>
+          <th>mIdentity</th>
+          <th>mWhatsapp</th>
+          <th>mEmail</th>
+          <th>mAddress</th>
+          <th>mNotes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+</div>
+
+
+ 
+  <script>
+    const sheetId = '12lYevpassr0K3Vs5KHiI9C7ZkjtVKH8lG8E36NpA1Do';
+    const apiKey = 'AIzaSyDO3vVJSjxMXjGWoQ_e_85s87eNgKPBNSg';
+    const range = 'Sheet1!A2:N';
+    const appsScriptURL = 'https://script.google.com/macros/s/AKfycbYOUR_WORKING_ID_HERE/exec';
+
+    let tableData = [];
+
+    function renderTable(filter = 'ALL') {
+      const tableBody = document.querySelector('#dataTable tbody');
+      tableBody.innerHTML = '';
+      let visibleCount = 0;
+
+      tableData.forEach((row, idx) => {
+        const ref = row[0] || '';
+        const type = row[4] || '';
+        const code = (filter.split('|')[0] || '').trim();
+
+        const show = filter === 'ALL' || 
+                     (filter === 'REPS' && type.includes('Rep')) || 
+                     ref.trim() === code;
+
+        if (show) {
+          const tr = document.createElement('tr');
+          tr.setAttribute('data-row-index', idx);
+
+          const indexCell = document.createElement('td');
+          indexCell.textContent = visibleCount + 1;
+          tr.appendChild(indexCell);
+
+          for (let i = 0; i < 14; i++) {
+            const td = document.createElement('td');
+            td.textContent = row[i] || '';
+            tr.appendChild(td);
+          }
+
+          const actionTd = document.createElement('td');
+          ['Edit', 'Delete', 'Add'].forEach(action => {
+            const btn = document.createElement('button');
+            btn.textContent = action;
+            btn.onclick = () => {
+              if (action === 'Edit') enableEditMode(tr, row);
+              if (action === 'Delete') alert(`Delete requested for: ${ref}`);
+              if (action === 'Add') insertAddRow(tr);
+            };
+            actionTd.appendChild(btn);
+          });
+          tr.appendChild(actionTd);
+
+          tableBody.appendChild(tr);
+          visibleCount++;
+        }
+      });
+
+      document.getElementById('rowCounter').textContent =
+        `${visibleCount} visible row${visibleCount !== 1 ? 's' : ''}`;
+    }
+
+    function enableEditMode(tr, originalData) {
+      const cells = tr.querySelectorAll('td');
+
+      for (let i = 1; i <= 14; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = cells[i].textContent;
+        input.style.width = '100%';
+        cells[i].innerHTML = '';
+        cells[i].appendChild(input);
+      }
+
+      const actionCell = cells[15];
+      actionCell.innerHTML = '';
+
+      ['Save', 'Cancel'].forEach(label => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.onclick = () => {
+          if (label === 'Save') {
+            const updated = [];
+            for (let i = 1; i <= 14; i++) {
+              const input = cells[i].querySelector('input');
+              updated.push(input ? input.value : '');
+            }
+            for (let i = 1; i <= 14; i++) {
+              cells[i].textContent = updated[i - 1];
+            }
+            restoreActions(actionCell, tr, updated);
+          } else {
+            for (let i = 1; i <= 14; i++) {
+              cells[i].textContent = originalData[i - 1] || '';
+            }
+            restoreActions(actionCell, tr, originalData);
+          }
+        };
+        actionCell.appendChild(btn);
+      });
+    }
+
+    function insertAddRow(afterTr) {
+      const tableBody = document.querySelector('#dataTable tbody');
+      const newTr = document.createElement('tr');
+      const indexCell = document.createElement('td');
+      indexCell.textContent = 'NEW';
+      newTr.appendChild(indexCell);
+
+      for (let i = 0; i < 14; i++) {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.style.width = '100%';
+        td.appendChild(input);
+        newTr.appendChild(td);
+      }
+
+      const actionTd = document.createElement('td');
+      ['Save', 'Cancel'].forEach(label => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.onclick = () => {
+          if (label === 'Save') {
+            const newData = [];
+            const cells = newTr.querySelectorAll('td');
+            for (let i = 1; i <= 14; i++) {
+              const input = cells[i].querySelector('input');
+              newData.push(input ? input.value : '');
+            }
+
+            fetch(appsScriptURL, {
+              method: 'POST',
+              body: JSON.stringify(newData),
+              headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.text())
+            .then(result => {
+              alert(result || 'Row added.');
+              for (let i = 1; i <= 14; i++) {
+                cells[i].textContent = newData[i - 1];
+              }
+              restoreActions(actionTd, newTr, newData);
+            })
+            .catch(error => {
+              alert('Error sending to Google Sheets: ' + error);
+            });
+          } else {
+            tableBody.removeChild(newTr);
+          }
+        };
+        actionTd.appendChild(btn);
+      });
+
+      newTr.appendChild(actionTd);
+      tableBody.insertBefore(newTr, afterTr.nextSibling);
+    }
+
+    function restoreActions(actionCell, tr, rowData) {
+      actionCell.innerHTML = '';
+      ['Edit', 'Delete', 'Add'].forEach(label => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.onclick = () => {
+          if (label === 'Edit') enableEditMode(tr, rowData);
+          if (label === 'Delete') alert(`Delete requested for: ${rowData[0]}`);
+          if (label === 'Add') insertAddRow(tr);
+        };
+        actionCell.appendChild(btn);
+      });
+    }
+
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`)
+      .then(res => res.json())
+      .then(data => {
+        tableData = data.values || [];
+        renderTable();
+      });
+
+    document.getElementById('claimSelector').addEventListener('change', function () {
+      renderTable(this.value);
+    });
+  </script>
+</body>
+</html>
+
