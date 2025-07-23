@@ -4,95 +4,66 @@
   <meta charset="UTF-8" />
   <title>CCPA Member Register</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 600px; margin: 2em auto; padding: 0 1em; }
+    body { font-family: Arial; padding: 20px; max-width: 700px; margin: auto; }
     label { display: block; margin-top: 10px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 6px; margin-top: 4px; box-sizing: border-box; }
-    button { margin-top: 15px; padding: 10px 20px; font-weight: bold; cursor: pointer; }
-    #status { margin-top: 20px; padding: 10px; background: #e0ffe0; border: 1px solid #4CAF50; display: none; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+    button { margin-top: 15px; padding: 10px 20px; font-size: 16px; }
+    #status { margin-top: 15px; font-weight: bold; color: green; }
   </style>
 </head>
 <body>
-
-  <h2>CCPA Member Register</h2>
-
-  <form id="memberForm" method="post" action="https://script.google.com/macros/library/d/1E6nFTS05XfPHqGfVLzGFVyJGiSen3PGKT0QDjPM1dLHg7-fkx7Cnzyni/2" target="hidden_iframe">
-
-    <label>Claim Reference</label>
-    <input type="text" name="claimReference" required />
-
-    <label>Claim Name</label>
-    <input type="text" name="claimName" />
-
-    <label>Surname</label>
-    <input type="text" name="mSurname" />
-
-    <label>First Names</label>
-    <input type="text" name="mFirstnames" />
-
-    <label>Member Type</label>
-    <select name="mType">
-      <option>Ordinary Member</option>
-      <option>Claim Representative</option>
-    </select>
-
-    <label>Share Fraction</label>
-    <input type="text" name="mShare" />
-
-    <label>Provenance</label>
-    <select name="mProvenance">
-      <option>Unspecified</option>
-      <option>Restitution</option>
-      <option>Cession</option>
-      <option>Purchase</option>
-      <option>Inheritance by Will</option>
-      <option>Inheritance Intestate</option>
-      <option>Customary Succession</option>
-      <option>Power of Attorney</option>
-    </select>
-
-    <label>Legal Docs Status</label>
-    <select name="mLegaldocs">
-      <option>Pending</option>
-      <option>In Progress</option>
-      <option>Complete</option>
-    </select>
-
-    <label>Document Link</label>
-    <input type="text" name="mDoclink" />
-
-    <label>ID Number</label>
-    <input type="text" name="mIdentity" />
-
-    <label>WhatsApp</label>
-    <input type="text" name="mWhatsapp" />
-
-    <label>Email</label>
-    <input type="text" name="mEmail" />
-
-    <label>Address</label>
-    <textarea name="mAddress" rows="3"></textarea>
-
-    <label>Notes</label>
-    <textarea name="mNotes" rows="3"></textarea>
-
+  <h2>Submit Member Details</h2>
+  <form id="memberForm">
+    <label>Claim Reference: <input type="text" name="claimReference" required></label>
+    <label>Claim Name: <input type="text" name="claimName" required></label>
+    <label>Surname: <input type="text" name="mSurname" required></label>
+    <label>First Names: <input type="text" name="mFirstnames" required></label>
+    <label>Type: <input type="text" name="mType" required></label>
+    <label>Share Fraction: <input type="text" name="shareFraction"></label>
+    <label>Provenance: <input type="text" name="mProvenance"></label>
+    <label>Legal Docs: <input type="text" name="mLegaldocs"></label>
+    <label>Doc Link: <input type="text" name="mDoclink"></label>
+    <label>Identity Number: <input type="text" name="mIdentity"></label>
+    <label>WhatsApp: <input type="text" name="mWhatsapp"></label>
+    <label>Email: <input type="email" name="mEmail"></label>
+    <label>Address: <textarea name="mAddress"></textarea></label>
+    <label>Notes: <textarea name="mNotes"></textarea></label>
     <button type="submit">Submit</button>
   </form>
 
-  <div id="status">✅ Submitted successfully!</div>
-
-  <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+  <div id="status">Waiting for input...</div>
 
   <script>
-    const form = document.getElementById('memberForm');
-    const statusDiv = document.getElementById('status');
-    const iframe = document.getElementById('hidden_iframe');
+    const form = document.getElementById("memberForm");
+    const statusDiv = document.getElementById("status");
 
-    iframe.onload = function() {
-      statusDiv.style.display = 'block';
-      setTimeout(() => statusDiv.style.display = 'none', 4000);
-      form.reset();
-    };
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = "⏳ Sending...";
+
+      const formData = new FormData(form);
+      const jsonData = {};
+      formData.forEach((value, key) => jsonData[key] = value);
+
+      try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbwyCKv12a0cEC9Hty0zqCXPff0Ubrv-oXOQVkTD1p_ZhC8X30sx7VEJQFpPZ5LtUA90FQ/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(jsonData)
+        });
+
+        const result = await response.json();
+
+        if (result.result === "success") {
+          statusDiv.textContent = "✅ Successfully submitted!";
+          form.reset();
+        } else {
+          statusDiv.textContent = `❌ Error: ${result.error}`;
+        }
+      } catch (err) {
+        statusDiv.textContent = `❌ Network error: ${err.message}`;
+      }
+    });
   </script>
-
 </body>
 </html>
