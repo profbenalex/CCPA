@@ -1,144 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CCPA Members Register</title>
   <meta charset="UTF-8" />
+  <title>CCPA Member Register - Form POST</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 700px;
-      margin: auto;
+      max-width: 600px;
+      margin: 2em auto;
+      padding: 0 1em;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
     }
     input, select, textarea {
-      display: block;
       width: 100%;
-      margin-bottom: 10px;
       padding: 6px;
+      margin-top: 4px;
+      box-sizing: border-box;
     }
     button {
+      margin-top: 15px;
       padding: 10px 20px;
       font-weight: bold;
       cursor: pointer;
-      margin-right: 10px;
     }
-    #output {
-      white-space: pre-wrap;
-      background: #f0f0f0;
+    #status {
+      margin-top: 20px;
       padding: 10px;
-      border: 1px solid #ccc;
-      min-height: 50px;
+      background: #e0ffe0;
+      border: 1px solid #4CAF50;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-  <h2>CCPA Member Registration</h2>
+<h2>CCPA Member Register</h2>
 
-  <form id="member-form">
-    <label>Claim Reference</label>
-    <input type="text" name="claimReference" required />
+<form id="memberForm" method="post" action="https://script.google.com/macros/s/AKfycbwyCKv12a0cEC9Hty0zqCXPff0Ubrv-oXOQVkTD1p_ZhC8X30sx7VEJQFpPZ5LtUA90FQ/exec" target="hidden_iframe">
+  
+  <label for="claimReference">Claim Reference</label>
+  <input type="text" id="claimReference" name="claimReference" required />
 
-    <label>Claim Name</label>
-    <input type="text" name="claimName" />
+  <label for="claimName">Claim Name</label>
+  <input type="text" id="claimName" name="claimName" />
 
-    <label>Surname</label>
-    <input type="text" name="mSurname" />
+  <label for="mSurname">Surname</label>
+  <input type="text" id="mSurname" name="mSurname" />
 
-    <label>First Names</label>
-    <input type="text" name="mFirstnames" />
+  <label for="mFirstnames">First Names</label>
+  <input type="text" id="mFirstnames" name="mFirstnames" />
 
-    <label>Member Type</label>
-    <select name="mType">
-      <option>Ordinary Member</option>
-      <option>Claim Representative</option>
-    </select>
+  <label for="mType">Member Type</label>
+  <select id="mType" name="mType">
+    <option>Ordinary Member</option>
+    <option>Claim Representative</option>
+  </select>
 
-    <label>Share Fraction</label>
-    <input type="text" name="mShare" />
+  <label for="mShare">Share Fraction</label>
+  <input type="text" id="mShare" name="mShare" />
 
-    <label>Provenance</label>
-    <select name="mProvenance">
-      <option>Unspecified</option>
-      <option>Restitution</option>
-      <option>Cession</option>
-      <option>Purchase</option>
-      <option>Inheritance by Will</option>
-      <option>Inheritance Intestate</option>
-      <option>Customary Succession</option>
-      <option>Power of Attorney</option>
-    </select>
+  <label for="mProvenance">Provenance</label>
+  <select id="mProvenance" name="mProvenance">
+    <option>Unspecified</option>
+    <option>Restitution</option>
+    <option>Cession</option>
+    <option>Purchase</option>
+    <option>Inheritance by Will</option>
+    <option>Inheritance Intestate</option>
+    <option>Customary Succession</option>
+    <option>Power of Attorney</option>
+  </select>
 
-    <label>Legal Docs Status</label>
-    <select name="mLegaldocs">
-      <option>Pending</option>
-      <option>In Progress</option>
-      <option>Complete</option>
-    </select>
+  <label for="mLegaldocs">Legal Docs Status</label>
+  <select id="mLegaldocs" name="mLegaldocs">
+    <option>Pending</option>
+    <option>In Progress</option>
+    <option>Complete</option>
+  </select>
 
-    <label>Document Link</label>
-    <input type="text" name="mDoclink" />
+  <label for="mDoclink">Document Link</label>
+  <input type="text" id="mDoclink" name="mDoclink" />
 
-    <label>ID Number</label>
-    <input type="text" name="mIdentity" />
+  <label for="mIdentity">ID Number</label>
+  <input type="text" id="mIdentity" name="mIdentity" />
 
-    <label>WhatsApp</label>
-    <input type="text" name="mWhatsapp" />
+  <label for="mWhatsapp">WhatsApp</label>
+  <input type="text" id="mWhatsapp" name="mWhatsapp" />
 
-    <label>Email</label>
-    <input type="email" name="mEmail" />
+  <label for="mEmail">Email</label>
+  <input type="email" id="mEmail" name="mEmail" />
 
-    <label>Address</label>
-    <textarea name="mAddress"></textarea>
+  <label for="mAddress">Address</label>
+  <textarea id="mAddress" name="mAddress" rows="3"></textarea>
 
-    <label>Notes</label>
-    <textarea name="mNotes"></textarea>
+  <label for="mNotes">Notes</label>
+  <textarea id="mNotes" name="mNotes" rows="3"></textarea>
 
-    <button type="submit">Submit</button>
-    <button type="button" onclick="readData()">Read Data</button>
-  </form>
+  <button type="submit">Submit</button>
+</form>
 
-  <h3>Server Response:</h3>
-  <pre id="output">Waiting for interaction…</pre>
+<div id="status">✅ Submitted successfully!</div>
 
-  <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyCKv12a0cEC9Hty0zqCXPff0Ubrv-oXOQVkTD1p_ZhC8X30sx7VEJQFpPZ5LtUA90FQ/exec';
+<!-- Hidden iframe to receive form response -->
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
+<script>
+  const form = document.getElementById('memberForm');
+  const statusDiv = document.getElementById('status');
+  const iframe = document.getElementById('hidden_iframe');
 
-    const form = document.getElementById('member-form');
-    const output = document.getElementById('output');
-
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      output.textContent = 'Submitting...';
-
-      const formData = new FormData(form);
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.text())
-      .then(data => {
-        output.textContent = '✅ Submitted!\n\n' + data;
-        form.reset();
-      })
-      .catch(err => {
-        output.textContent = '❌ Error:\n' + err;
-      });
-    });
-
-    function readData() {
-      output.textContent = 'Reading data...';
-      fetch(SCRIPT_URL)
-        .then(res => res.json())
-        .then(data => {
-          output.textContent = JSON.stringify(data, null, 2);
-        })
-        .catch(err => {
-          output.textContent = '❌ Error reading data:\n' + err;
-        });
-    }
-  </script>
+  // Show confirmation after form submission (when iframe loads)
+  iframe.onload = function() {
+    statusDiv.style.display = 'block';
+    setTimeout(() => {
+      statusDiv.style.display = 'none';
+    }, 4000);
+    form.reset();
+  };
+</script>
 
 </body>
 </html>
