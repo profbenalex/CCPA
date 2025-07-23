@@ -2,87 +2,63 @@
 <html>
 <head>
   <title>CCPA Members Register</title>
+  <meta name="google-signin-client_id" content="290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com">
 </head>
 <body>
   <h2>CCPA Members Register</h2>
 
-  <button onclick="handleAuthClick()">Authorize</button>
-  <button onclick="listData()">Read Sheet</button>
-  <button onclick="appendRow()">Add Row</button>
+  <button onclick="handleAuthClick()">🔐 Authorize</button>
+  <button onclick="listData()">📖 Read Sheet</button>
+  <button onclick="appendRow()">📝 Add Row</button>
 
-  <pre id="output"></pre>
+  <pre id="output">Waiting for user action...</pre>
 
-  <script src="https://apis.google.com/js/api.js"></script>
   <script>
     const CLIENT_ID = '290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com';
-    const API_KEY = '';  // Not needed for Sheets read/write via OAuth
     const SPREADSHEET_ID = '1FUzgEatxn_pr2LkqDdRq0m0kPC6zsX0T0J3-MBifqD4';
     const SHEET_NAME = 'register';
-
-    const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
     const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
+    function log(message) {
+      document.getElementById('output').textContent += `\n${message}`;
+      console.log(message);
+    }
+
     function gapiLoaded() {
+      console.log('🔃 GAPI loaded, initializing...');
       gapi.load('client:auth2', initializeGapiClient);
     }
 
     async function initializeGapiClient() {
-      await gapi.client.init({
-        apiKey: API_KEY,
-        clientId: CLIENT_ID,
-        discoveryDocs: [DISCOVERY_DOC],
-        scope: SCOPES,
-      });
-      document.getElementById('output').innerText = 'GAPI initialized.';
+      try {
+        await gapi.client.init({
+          clientId: CLIENT_ID,
+          scope: SCOPES,
+        });
+        log('✅ GAPI initialized');
+      } catch (err) {
+        log('❌ GAPI init failed: ' + err.message);
+      }
     }
 
     function handleAuthClick() {
-      gapi.auth2.getAuthInstance().signIn();
+      const auth = gapi.auth2.getAuthInstance();
+      if (!auth) {
+        log('⚠️ Auth instance not ready. GAPI not initialized yet.');
+        return;
+      }
+      auth.signIn().then(() => {
+        const email = auth.currentUser.get().getBasicProfile().getEmail();
+        log(`✅ Signed in as: ${email}`);
+      }).catch((err) => {
+        log(`❌ Sign-in failed: ${err.error}`);
+      });
     }
 
     async function listData() {
       try {
         const response = await gapi.client.sheets.spreadsheets.values.get({
           spreadsheetId: SPREADSHEET_ID,
-          range: SHEET_NAME + '!A1:N', // covers your 14 columns
+          range: `${SHEET_NAME}!A1:N`,
         });
-        const rows = response.result.values;
-        if (rows.length) {
-          document.getElementById('output').innerText = rows.map(r => r.join(' | ')).join('\n');
-        } else {
-          document.getElementById('output').innerText = 'No data found.';
-        }
-      } catch (err) {
-        document.getElementById('output').innerText = 'Error: ' + err.message;
-      }
-    }
-
-    async function appendRow() {
-      const values = [
-        [
-          "A999 Example", "Example Claim", "Doe", "Jane", "Ordinary Member",
-          "1/20", "Restitution", "Pending", "http://doclink", "1234567890123",
-          "0712345678", "jane@example.com", "123 Main St", "Test entry"
-        ]
-      ];
-      const body = {
-        values: values,
-      };
-      try {
-        const result = await gapi.client.sheets.spreadsheets.values.append({
-          spreadsheetId: SPREADSHEET_ID,
-          range: SHEET_NAME + '!A:N',
-          valueInputOption: 'RAW',
-          insertDataOption: 'INSERT_ROWS',
-          resource: body,
-        });
-        document.getElementById('output').innerText = 'Row added.';
-      } catch (err) {
-        document.getElementById('output').innerText = 'Error: ' + err.message;
-      }
-    }
-
-    gapiLoaded(); // Trigger load immediately
-  </script>
-</body>
-</html>
+        const
