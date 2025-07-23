@@ -2,126 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CCPA Member Register - Form POST</title>
+  <title>CCPA Member Register</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 2em auto;
-      padding: 0 1em;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 6px;
-      margin-top: 4px;
-      box-sizing: border-box;
-    }
-    button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    #status {
-      margin-top: 20px;
-      padding: 10px;
-      background: #e0ffe0;
-      border: 1px solid #4CAF50;
-      display: none;
-    }
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 2em auto; padding: 0 1em; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 6px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 15px; padding: 10px 20px; font-weight: bold; cursor: pointer; }
+    #status { margin-top: 20px; padding: 10px; background: #e0ffe0; border: 1px solid #4CAF50; display: none; }
   </style>
 </head>
 <body>
 
-<h2>CCPA Member Register</h2>
+  <h2>CCPA Member Register</h2>
 
-<form id="memberForm" method="post" action="https://script.google.com/macros/s/AKfycbwyCKv12a0cEC9Hty0zqCXPff0Ubrv-oXOQVkTD1p_ZhC8X30sx7VEJQFpPZ5LtUA90FQ/exec" target="hidden_iframe">
-  
-  <label for="claimReference">Claim Reference</label>
-  <input type="text" id="claimReference" name="claimReference" required />
+  <form id="memberForm" method="post" action="https://script.google.com/macros/library/d/1E6nFTS05XfPHqGfVLzGFVyJGiSen3PGKT0QDjPM1dLHg7-fkx7Cnzyni/2" target="hidden_iframe">
 
-  <label for="claimName">Claim Name</label>
-  <input type="text" id="claimName" name="claimName" />
+    <label>Claim Reference</label>
+    <input type="text" name="claimReference" required />
 
-  <label for="mSurname">Surname</label>
-  <input type="text" id="mSurname" name="mSurname" />
+    <label>Claim Name</label>
+    <input type="text" name="claimName" />
 
-  <label for="mFirstnames">First Names</label>
-  <input type="text" id="mFirstnames" name="mFirstnames" />
+    <label>Surname</label>
+    <input type="text" name="mSurname" />
 
-  <label for="mType">Member Type</label>
-  <select id="mType" name="mType">
-    <option>Ordinary Member</option>
-    <option>Claim Representative</option>
-  </select>
+    <label>First Names</label>
+    <input type="text" name="mFirstnames" />
 
-  <label for="mShare">Share Fraction</label>
-  <input type="text" id="mShare" name="mShare" />
+    <label>Member Type</label>
+    <select name="mType">
+      <option>Ordinary Member</option>
+      <option>Claim Representative</option>
+    </select>
 
-  <label for="mProvenance">Provenance</label>
-  <select id="mProvenance" name="mProvenance">
-    <option>Unspecified</option>
-    <option>Restitution</option>
-    <option>Cession</option>
-    <option>Purchase</option>
-    <option>Inheritance by Will</option>
-    <option>Inheritance Intestate</option>
-    <option>Customary Succession</option>
-    <option>Power of Attorney</option>
-  </select>
+    <label>Share Fraction</label>
+    <input type="text" name="mShare" />
 
-  <label for="mLegaldocs">Legal Docs Status</label>
-  <select id="mLegaldocs" name="mLegaldocs">
-    <option>Pending</option>
-    <option>In Progress</option>
-    <option>Complete</option>
-  </select>
+    <label>Provenance</label>
+    <select name="mProvenance">
+      <option>Unspecified</option>
+      <option>Restitution</option>
+      <option>Cession</option>
+      <option>Purchase</option>
+      <option>Inheritance by Will</option>
+      <option>Inheritance Intestate</option>
+      <option>Customary Succession</option>
+      <option>Power of Attorney</option>
+    </select>
 
-  <label for="mDoclink">Document Link</label>
-  <input type="text" id="mDoclink" name="mDoclink" />
+    <label>Legal Docs Status</label>
+    <select name="mLegaldocs">
+      <option>Pending</option>
+      <option>In Progress</option>
+      <option>Complete</option>
+    </select>
 
-  <label for="mIdentity">ID Number</label>
-  <input type="text" id="mIdentity" name="mIdentity" />
+    <label>Document Link</label>
+    <input type="text" name="mDoclink" />
 
-  <label for="mWhatsapp">WhatsApp</label>
-  <input type="text" id="mWhatsapp" name="mWhatsapp" />
+    <label>ID Number</label>
+    <input type="text" name="mIdentity" />
 
-  <label for="mEmail">Email</label>
-  <input type="email" id="mEmail" name="mEmail" />
+    <label>WhatsApp</label>
+    <input type="text" name="mWhatsapp" />
 
-  <label for="mAddress">Address</label>
-  <textarea id="mAddress" name="mAddress" rows="3"></textarea>
+    <label>Email</label>
+    <input type="text" name="mEmail" />
 
-  <label for="mNotes">Notes</label>
-  <textarea id="mNotes" name="mNotes" rows="3"></textarea>
+    <label>Address</label>
+    <textarea name="mAddress" rows="3"></textarea>
 
-  <button type="submit">Submit</button>
-</form>
+    <label>Notes</label>
+    <textarea name="mNotes" rows="3"></textarea>
 
-<div id="status">✅ Submitted successfully!</div>
+    <button type="submit">Submit</button>
+  </form>
 
-<!-- Hidden iframe to receive form response -->
-<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+  <div id="status">✅ Submitted successfully!</div>
 
-<script>
-  const form = document.getElementById('memberForm');
-  const statusDiv = document.getElementById('status');
-  const iframe = document.getElementById('hidden_iframe');
+  <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
-  // Show confirmation after form submission (when iframe loads)
-  iframe.onload = function() {
-    statusDiv.style.display = 'block';
-    setTimeout(() => {
-      statusDiv.style.display = 'none';
-    }, 4000);
-    form.reset();
-  };
-</script>
+  <script>
+    const form = document.getElementById('memberForm');
+    const statusDiv = document.getElementById('status');
+    const iframe = document.getElementById('hidden_iframe');
+
+    iframe.onload = function() {
+      statusDiv.style.display = 'block';
+      setTimeout(() => statusDiv.style.display = 'none', 4000);
+      form.reset();
+    };
+  </script>
 
 </body>
 </html>
