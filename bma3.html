@@ -2,93 +2,142 @@
 <html>
 <head>
   <title>CCPA Members Register</title>
-  <meta name="google-signin-client_id" content="290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com">
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+    input, select, textarea {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 6px;
+    }
+    button {
+      padding: 10px 20px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    #output {
+      white-space: pre-wrap;
+      background: #f0f0f0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      min-height: 50px;
+    }
+  </style>
 </head>
 <body>
-  <h2>CCPA Members Register</h2>
 
-  <button onclick="handleAuthClick()">🔐 Authorize</button>
-  <button onclick="listData()">📖 Read Sheet</button>
-  <button onclick="appendRow()">📝 Add Row</button>
+  <h2>CCPA Member Registration</h2>
 
-  <pre id="output">Waiting for user action...</pre>
+  <form id="member-form">
+    <label>Claim Reference</label>
+    <input type="text" name="claimReference" required />
 
-  <script src="https://apis.google.com/js/api.js"></script>
+    <label>Claim Name</label>
+    <input type="text" name="claimName" />
+
+    <label>Surname</label>
+    <input type="text" name="mSurname" />
+
+    <label>First Names</label>
+    <input type="text" name="mFirstnames" />
+
+    <label>Member Type</label>
+    <select name="mType">
+      <option>Ordinary Member</option>
+      <option>Claim Representative</option>
+    </select>
+
+    <label>Share Fraction</label>
+    <input type="text" name="mShare" />
+
+    <label>Provenance</label>
+    <select name="mProvenance">
+      <option>Unspecified</option>
+      <option>Restitution</option>
+      <option>Cession</option>
+      <option>Purchase</option>
+      <option>Inheritance by Will</option>
+      <option>Inheritance Intestate</option>
+      <option>Customary Succession</option>
+      <option>Power of Attorney</option>
+    </select>
+
+    <label>Legal Docs Status</label>
+    <select name="mLegaldocs">
+      <option>Pending</option>
+      <option>In Progress</option>
+      <option>Complete</option>
+    </select>
+
+    <label>Document Link</label>
+    <input type="text" name="mDoclink" />
+
+    <label>ID Number</label>
+    <input type="text" name="mIdentity" />
+
+    <label>WhatsApp</label>
+    <input type="text" name="mWhatsapp" />
+
+    <label>Email</label>
+    <input type="email" name="mEmail" />
+
+    <label>Address</label>
+    <textarea name="mAddress"></textarea>
+
+    <label>Notes</label>
+    <textarea name="mNotes"></textarea>
+
+    <button type="submit">Submit</button>
+    <button type="button" onclick="readData()">Read Data</button>
+  </form>
+
+  <h3>Server Response:</h3>
+  <pre id="output">Waiting for interaction…</pre>
+
   <script>
-    const CLIENT_ID = '290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com';
-    const SPREADSHEET_ID = '1FUzgEatxn_pr2LkqDdRq0m0kPC6zsX0T0J3-MBifqD4';
-    const SHEET_NAME = 'register';
-    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzclMxqa2DSR_n6u47KeBAMdF6P4EtyLM4uhE9hSfE70jI1AKpy04Q_xNV0whU_42Gmyw/exec';
 
-    function log(message) {
-      document.getElementById('output').textContent += `\n${message}`;
-      console.log(message);
-    }
+    const form = document.getElementById('member-form');
+    const output = document.getElementById('output');
 
-    function gapiLoaded() {
-      gapi.load('client:auth2', initializeGapiClient);
-    }
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      output.textContent = 'Submitting...';
 
-    async function initializeGapiClient() {
-      try {
-        await gapi.client.init({
-          clientId: CLIENT_ID,
-          scope: SCOPES,
-        });
-        log('✅ GAPI initialized');
-      } catch (err) {
-        log('❌ GAPI init failed: ' + err.message);
-      }
-    }
-
-    function handleAuthClick() {
-      gapi.auth2.getAuthInstance().signIn().then(() => {
-        log('✅ Signed in as: ' + gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getEmail());
-      }).catch((err) => {
-        log('❌ Sign-in failed: ' + err.error);
+      const formData = new FormData(form);
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.text())
+      .then(data => {
+        output.textContent = '✅ Submitted!\n\n' + data;
+        form.reset();
+      })
+      .catch(err => {
+        output.textContent = '❌ Error:\n' + err;
       });
-    }
+    });
 
-    async function listData() {
-      try {
-        const response = await gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range: `${SHEET_NAME}!A1:N`,
+    function readData() {
+      output.textContent = 'Reading data...';
+      fetch(SCRIPT_URL)
+        .then(res => res.json())
+        .then(data => {
+          output.textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(err => {
+          output.textContent = '❌ Error reading data:\n' + err;
         });
-        const rows = response.result.values;
-        if (!rows || rows.length === 0) {
-          log('⚠️ No data found.');
-        } else {
-          log(`📋 Rows found: ${rows.length}`);
-          log(rows.map(row => row.join(' | ')).join('\n'));
-        }
-      } catch (err) {
-        log('❌ Read error: ' + err.message);
-      }
     }
-
-    async function appendRow() {
-      const values = [[
-        "A999 Example", "Example Claim", "Doe", "Jane", "Ordinary Member",
-        "1/20", "Restitution", "Pending", "http://doclink",
-        "1234567890123", "0712345678", "jane@example.com",
-        "123 Main St", "Test entry"
-      ]];
-      try {
-        const response = await gapi.client.sheets.spreadsheets.values.append({
-          spreadsheetId: SPREADSHEET_ID,
-          range: `${SHEET_NAME}!A1:N1`,
-          valueInputOption: 'RAW',
-          insertDataOption: 'INSERT_ROWS',
-          resource: { values },
-        });
-        log('✅ Row added successfully.');
-      } catch (err) {
-        log('❌ Write error: ' + err.message);
-      }
-    }
-
-    gapiLoaded(); // Start the API load immediately
   </script>
+
 </body>
 </html>
