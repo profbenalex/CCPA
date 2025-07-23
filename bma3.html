@@ -13,6 +13,7 @@
 
   <pre id="output">Waiting for user action...</pre>
 
+  <script src="https://apis.google.com/js/api.js"></script>
   <script>
     const CLIENT_ID = '290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com';
     const SPREADSHEET_ID = '1FUzgEatxn_pr2LkqDdRq0m0kPC6zsX0T0J3-MBifqD4';
@@ -25,7 +26,6 @@
     }
 
     function gapiLoaded() {
-      console.log('🔃 GAPI loaded, initializing...');
       gapi.load('client:auth2', initializeGapiClient);
     }
 
@@ -42,16 +42,10 @@
     }
 
     function handleAuthClick() {
-      const auth = gapi.auth2.getAuthInstance();
-      if (!auth) {
-        log('⚠️ Auth instance not ready. GAPI not initialized yet.');
-        return;
-      }
-      auth.signIn().then(() => {
-        const email = auth.currentUser.get().getBasicProfile().getEmail();
-        log(`✅ Signed in as: ${email}`);
+      gapi.auth2.getAuthInstance().signIn().then(() => {
+        log('✅ Signed in as: ' + gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getEmail());
       }).catch((err) => {
-        log(`❌ Sign-in failed: ${err.error}`);
+        log('❌ Sign-in failed: ' + err.error);
       });
     }
 
@@ -61,4 +55,40 @@
           spreadsheetId: SPREADSHEET_ID,
           range: `${SHEET_NAME}!A1:N`,
         });
-        const
+        const rows = response.result.values;
+        if (!rows || rows.length === 0) {
+          log('⚠️ No data found.');
+        } else {
+          log(`📋 Rows found: ${rows.length}`);
+          log(rows.map(row => row.join(' | ')).join('\n'));
+        }
+      } catch (err) {
+        log('❌ Read error: ' + err.message);
+      }
+    }
+
+    async function appendRow() {
+      const values = [[
+        "A999 Example", "Example Claim", "Doe", "Jane", "Ordinary Member",
+        "1/20", "Restitution", "Pending", "http://doclink",
+        "1234567890123", "0712345678", "jane@example.com",
+        "123 Main St", "Test entry"
+      ]];
+      try {
+        const response = await gapi.client.sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${SHEET_NAME}!A1:N1`,
+          valueInputOption: 'RAW',
+          insertDataOption: 'INSERT_ROWS',
+          resource: { values },
+        });
+        log('✅ Row added successfully.');
+      } catch (err) {
+        log('❌ Write error: ' + err.message);
+      }
+    }
+
+    gapiLoaded(); // Start the API load immediately
+  </script>
+</body>
+</html>
