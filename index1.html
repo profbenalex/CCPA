@@ -72,7 +72,8 @@
           mShare: "1/3",
           mProvenance: "Power of Attorney",
           mLegaldocs: "Complete",
-          MDoclink: "N/a",
+          mDoclink: "document123",
+          mIdentity: "1234567890",
           MIdentity: "1234567890",
           mWhatsapp: "1234567890",
           mEmail: "name@gmail.com",
@@ -80,7 +81,7 @@
           mNotes: "Dummy data"
         };
 
-        // Build dummy row
+        // Dummy table rendering
         const dummyHeaders = document.getElementById('dummyHeaders');
         const dummyDataRow = document.getElementById('dummyData');
         headers.forEach(header => {
@@ -94,7 +95,7 @@
           dummyDataRow.appendChild(td);
         });
 
-        // Build live register table
+        // Live register table rendering
         const tableHeaders = document.getElementById('tableHeaders');
         headers.forEach(header => {
           const th = document.createElement('th');
@@ -113,7 +114,7 @@
           tableBody.appendChild(tr);
         });
 
-        // Submit dummy row
+        // Add dummy row to sheet
         document.getElementById('addDummyRowBtn').addEventListener('click', () => {
           const formData = new FormData();
           const cells = dummyDataRow.querySelectorAll('td');
