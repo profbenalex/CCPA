@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CCPA Members Register</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    button {
+      margin: 10px 10px 20px 0;
+      padding: 8px 14px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 16px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    tr.dummy-row {
+      background-color: #e8f4ff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CCPA Members Register</h1>
+
+  <h2>🔐 Authenticate to Submit</h2>
+  <button id="signinBtn">Sign In with Google</button>
+  <button id="submitBtn" disabled>Submit Dummy Row</button>
+
+  <h2>📖 Live Register</h2>
+  <table id="liveTable">
+    <thead id="liveHeaders"></thead>
+    <tbody id="liveBody"></tbody>
+  </table>
+
+  <script>
+    const CLIENT_ID = "290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com";
+    const SHEET_ID = "1FUzgEatxn_pr2LkqDdRq0m0kPC6zsX0T0J3-MBifqD4";
+    const RANGE = "register";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyCKv12a0cEC9Hty0zqCXPff0Ubrv-oXOQVkTD1p_ZhC8X30sx7VEJQFpPZ5LtUA90FQ/exec";
+
+    let accessToken = "";
+
+    const dummyRow = {
+      claimReference: "X123",
+      claimName: "RamaphosaC",
+      mSurname: "Roberts",
+      mFirstnames: "Mary Bether",
+      mType: "Claim Representative",
+      mShare: "1/3",
+      mProvenance: "Power of Attorney",
+      mLegaldocs: "Complete",
+      mDoclink: "document123",
+      mIdentity: "1234567890",
+      mWhatsapp: "1234567890",
+      mEmail: "name@gmail.com",
+      mAddress: "13 Dark, Side, 1234",
+      mNotes: "Dummy data"
+    };
+
+    // Authenticate with Google
+    document.getElementById("signinBtn").addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/spreadsheets",
+        callback: (tokenResponse) => {
+          accessToken = tokenResponse.access_token;
+          document.getElementById("submitBtn").disabled = false;
+          alert("Signed in successfully. You may now submit the dummy row.");
+        }
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    // Submit dummy row to Sheet
+    document.getElementById("submitBtn").addEventListener("click", () => {
+      const valuesArray = Object.values(dummyRow);
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}:append?valueInputOption=RAW`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ values: [valuesArray] })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Dummy row submitted:", data);
+        alert("Dummy row successfully added to the register.");
+      })
+      .catch(err => {
+        console.error("Submission error:", err);
+        alert("Error submitting dummy row. See console for details.");
+      });
+    });
+
+    // Load register from Apps Script and add dummy row at top
+    fetch(APPS_SCRIPT_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (!Array.isArray(data) || data.length === 0) {
+          document.body.insertAdjacentHTML("beforeend", "<p>No register data found.</p>");
+          return;
+        }
+
+        const headers = Object.keys(data[0]);
+
+        // Render header row (with index column)
+        const headerRow = document.createElement("tr");
+        const indexHeader = document.createElement("th");
+        indexHeader.textContent = "#";
+        headerRow.appendChild(indexHeader);
+        headers.forEach(h => {
+          const th = document.createElement("th");
+          th.textContent = h;
+          headerRow.appendChild(th);
+        });
+        document.getElementById("liveHeaders").appendChild(headerRow);
+
+        // Add dummy row as index 0
+        const dummyTr = document.createElement("tr");
+        dummyTr.className = "dummy-row";
+        const dummyIndex = document.createElement("td");
+        dummyIndex.textContent = "0";
+        dummyTr.appendChild(dummyIndex);
+        headers.forEach(h => {
+          const td = document.createElement("td");
+          td.textContent = dummyRow[h] || "";
+          dummyTr.appendChild(td);
+        });
+        document.getElementById("liveBody").appendChild(dummyTr);
+
+        // Add actual data rows starting at index 1
+        data.forEach((entry, i) => {
+          const tr = document.createElement("tr");
+          const indexTd = document.createElement("td");
+          indexTd.textContent = (i + 1).toString();
+          tr.appendChild(indexTd);
+          headers.forEach(h => {
+            const td = document.createElement("td");
+            td.textContent = entry[h] || "";
+            tr.appendChild(td);
+          });
+          document.getElementById("liveBody").appendChild(tr);
+        });
+      })
+      .catch(err => {
+        console.error("Error loading register:", err);
+        document.body.insertAdjacentHTML("beforeend", "<p>Unable to load register data.</p>");
+      });
+  </script>
+
+</body>
+</html>
