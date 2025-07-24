@@ -26,17 +26,22 @@
     th, td {
       border: 1px solid #ccc;
       padding: 8px;
+      vertical-align: top;
     }
     th {
       background-color: #f2f2f2;
     }
-    tr.dummy-row input {
-      width: 100%;
-      padding: 4px;
-      box-sizing: border-box;
-    }
     tr.dummy-row {
       background-color: #e8f4ff;
+    }
+    tr.dummy-row input {
+      width: 100%;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 6px 4px;
+      border: 1px solid #999;
+      background-color: #ffffff;
+      box-sizing: border-box;
     }
   </style>
 </head>
@@ -79,7 +84,7 @@
       mNotes: "Dummy data"
     };
 
-    // Authenticate with Google
+    // Sign in for OAuth
     document.getElementById("signinBtn").addEventListener("click", () => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
@@ -96,7 +101,7 @@
     // Submit edited dummy row
     document.getElementById("submitBtn").addEventListener("click", () => {
       const inputCells = document.querySelectorAll("tr.dummy-row input");
-      const editedValues = Array.from(inputCells).map(input => input.value);
+      const editedValues = Array.from(inputCells).map(input => input.value.trim());
       fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}:append?valueInputOption=RAW`, {
         method: "POST",
         headers: {
@@ -116,7 +121,7 @@
       });
     });
 
-    // Load register and create editable row 0
+    // Load register and insert editable row
     fetch(APPS_SCRIPT_URL)
       .then(res => res.json())
       .then(data => {
@@ -127,7 +132,7 @@
 
         const headers = Object.keys(data[0]);
 
-        // Render header row with index column
+        // Header row
         const headerRow = document.createElement("tr");
         const indexHeader = document.createElement("th");
         indexHeader.textContent = "#";
@@ -139,7 +144,7 @@
         });
         document.getElementById("liveHeaders").appendChild(headerRow);
 
-        // Render editable dummy row as index 0
+        // Editable row 0
         const dummyTr = document.createElement("tr");
         dummyTr.className = "dummy-row";
         const indexTd = document.createElement("td");
@@ -155,7 +160,7 @@
         });
         document.getElementById("liveBody").appendChild(dummyTr);
 
-        // Render actual register rows starting at index 1
+        // Live register rows starting from index 1
         data.forEach((entry, i) => {
           const tr = document.createElement("tr");
           const indexTd = document.createElement("td");
