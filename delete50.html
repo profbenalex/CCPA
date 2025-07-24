@@ -1,92 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>🗑️ Fixed Row 50 Delete</title>
+  <title>Delete Member Record</title>
+  <meta name="google-signin-client_id" content="YOUR_CLIENT_ID.apps.googleusercontent.com">
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 30px;
-      background-color: #f2f2f2;
-    }
-    #deleteBox {
-      max-width: 500px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    h2 {
-      color: #b71c1c;
-    }
-    p {
-      font-size: 16px;
-      margin-bottom: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #c62828;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #b71c1c;
-    }
+    body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; }
+    input, button { padding: 8px; margin-top: 10px; width: 100%; box-sizing: border-box; }
+    #userEmail { font-weight: bold; margin-top: 10px; color: green; }
+    #deleteForm { display: none; margin-top: 20px; }
   </style>
 </head>
 <body>
-  <div id="deleteBox">
-    <h2>🗑️ Delete Row 50</h2>
-    <p id="rowPreview">Loading preview...</p>
-    <button onclick="forceDelete50()">Delete Row 50</button>
-  </div>
+  <h2>🔐 Delete Member Record</h2>
+
+  <!-- Google Sign-In -->
+  <div class="g-signin2" data-onsuccess="onSignIn"></div>
+  <div id="userEmail"></div>
+
+  <!-- Delete Form -->
+  <form id="deleteForm">
+    <label for="memberId">Enter Member ID to delete:</label>
+    <input type="text" id="memberId" name="memberId" required>
+    <button type="submit">🚨 Delete Record</button>
+  </form>
 
   <script>
-    // 🛠️ Make sure these are set up before using this page
-    const API = "https://your-api-endpoint"; // Replace with your actual API URL
-    const allMembers = [
-      /* Simulated dataset — replace with real data */
-      { id: "a1", mSurname: "Smith" }, { id: "a2", mSurname: "Nguyen" },
-      // ... add 47 more dummy members
-      { id: "a50", mSurname: "Mkize" }, // This is row 50
-    ];
+    let userEmail = "";
 
-    window.forceDelete50 = function () {
-      const targetIndex = 49; // zero-based index for row 50
-      const member = allMembers[targetIndex];
+    function onSignIn(googleUser) {
+      const profile = googleUser.getBasicProfile();
+      userEmail = profile.getEmail();
+      document.getElementById("userEmail").innerText = "Signed in as: " + userEmail;
+      document.getElementById("deleteForm").style.display = "block";
+    }
 
-      if (!member) {
-        alert("❌ Row 50 not found.");
+    document.getElementById("deleteForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      const memberId = document.getElementById("memberId").value.trim();
+
+      if (!userEmail || !memberId) {
+        alert("Missing email or member ID.");
         return;
       }
 
-      const confirmText = `Are you sure you want to permanently delete:\n\n${member.mSurname} [ID: ${member.id}]`;
-      if (!confirm(confirmText)) return;
+      const payload = {
+        action: "delete",
+        email: userEmail,
+        memberId: memberId
+      };
 
-      fetch(`${API}/${member.id}`, { method: "DELETE" })
-        .then(res => {
-          if (res.ok) {
-            alert("🗑️ Row 50 deleted.");
-            // Optionally reload members here
-            // loadMembers();
-          } else {
-            res.text().then(msg => alert("❌ Deletion failed: " + msg));
-          }
-        })
-        .catch(() => alert("⚠️ Network error"));
-    };
-
-    window.addEventListener("DOMContentLoaded", () => {
-      const member = allMembers[49];
-      const previewEl = document.getElementById("rowPreview");
-      previewEl.textContent = member
-        ? `Row 50: ${member.mSurname} [ID: ${member.id}]`
-        : "Row 50 not found.";
+      fetch("https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.text())
+      .then(result => alert(result))
+      .catch(error => {
+        console.error("Error deleting record:", error);
+        alert("Something went wrong.");
+      });
     });
   </script>
 </body>
