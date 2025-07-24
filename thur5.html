@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CCPA Members Register</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    button {
+      margin: 10px 10px 20px 0;
+      padding: 8px 14px;
+      font-size: 14px;
+      height: 38px;
+      cursor: pointer;
+    }
+    #claimSelector {
+      font-size: 14px;
+      padding: 8px 14px;
+      height: 38px;
+      margin: 10px 10px 20px 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 16px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 8px;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    tr.dummy-row {
+      background-color: #e8f4ff;
+    }
+    tr.dummy-row td {
+      vertical-align: middle !important;
+    }
+    tr.dummy-row td:not(:first-child) {
+      padding: 0 !important;
+    }
+    tr.dummy-row td:first-child {
+      font-size: 15px;
+      font-weight: 500;
+      padding: 6px 8px;
+      text-align: left;
+      height: 2.4em;
+      line-height: 2.4em;
+    }
+    tr.dummy-row input {
+      width: 100%;
+      padding: 1pt 6px;
+      font-size: 15px;
+      font-weight: 500;
+      height: 2.4em;
+      line-height: 2.4em;
+      border: none;
+      background-color: #fff;
+      box-sizing: border-box;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CCPA Members Register</h1>
+
+  <h2>🔐 Authenticate to Submit</h2>
+  <button id="signinBtn">Sign In with Google</button>
+  <button id="submitBtn" disabled>Submit Edited Row 0</button>
+
+  <p><strong>🎯 Select Claim Reference:</strong></p>
+  <select id="claimSelector">
+    <option value="ALL" selected>ALL Members</option>
+    <option value="REPS">Claim Representatives ONLY</option>
+    <option value="A27|AdamsI">A27 AdamsI</option>
+    <option value="A460|AdamsMF">A460 AdamsMF</option>
+    <option value="A625|AdamH">A625 AdamH</option>
+    <option value="A661|ArnoldF">A661 ArnoldF</option>
+    <option value="A679|AlexanderJJ">A679 AlexanderJJ</option>
+    <option value="A88|AbrahamsK">A88 AbrahamsK</option>
+    <option value="B321|BenjaminWC">B321 BenjaminWC</option>
+    <option value="G126|GallantH">G126 GallantH</option>
+    <option value="G32|GirieE">G32 GirieE</option>
+    <option value="G34|GabrielL">G34 GabrielL</option>
+    <option value="H238|HlokoanaR">H238 HlokoanaR</option>
+    <option value="H425|Hoosain">H425 Hoosain</option>
+    <option value="H431|HassanA">H431 HassanA</option>
+    <option value="J101|JacobsR">J101 JacobsR</option>
+    <option value="J159|JohnstonAK">J159 JohnstonAK</option>
+    <option value="J63|JansenS">J63 JansenS</option>
+    <option value="K392|KamaloodienR">K392 KamaloodienR</option>
+    <option value="K85|Klaaste & St Clair">K85 Klaaste & St Clair</option>
+    <option value="L110|LowersCE">L110 LowersCE</option>
+    <option value="M2116|MatiZ">M2116 MatiZ</option>
+    <option value="N20|NellS">N20 NellS</option>
+    <option value="N23|NeumanH">N23 NeumanH</option>
+    <option value="O20|OliverBS">O20 OliverBS</option>
+    <option value="O51|OsmanE">O51 OsmanE</option>
+    <option value="S1404|SibekoY">S1404 SibekoY</option>
+    <option value="S250|SiljeurRS">S250 SiljeurRS</option>
+    <option value="S426|SamsodienA">S426 SamsodienA</option>
+    <option value="S457A|MtwanaJ">S457A MtwanaJ</option>
+    <option value="S713|SuleloS">S713 SuleloS</option>
+    <option value="S840|SadienD">S840 SadienD</option>
+    <option value="S881|SplintersP">S881 SplintersP</option>
+    <option value="T62|TaliepMS">T62 TaliepMS</option>
+    <option value="V202|Van Der Schyff">V202 Van Der Schyff</option>
+    <option value="W18|Brache & Michaels">W18 Brache & Michaels</option>
+  </select>
+
+  <p id="viewLabel"><strong>📖 Live Register:</strong> Showing ALL Members</p>
+
+  <table id="liveTable">
+    <thead id="liveHeaders"></thead>
+    <tbody id="liveBody"></tbody>
+  </table>
+
+
+  <script>
+    const CLIENT_ID = "290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com";
+    const SHEET_ID = "1FUzgEatxn_pr2LkqDdRq0m0kPC6zsX0T0J3-MBifqD4";
+    const RANGE = "register";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyCKv12a0cEC9Hty0zqCXPff0Ubrv-oXOQVkTD1p_ZhC8X30sx7VEJQFpPZ5LtUA90FQ/exec";
+
+    let accessToken = "";
+    let fullData = [];
+
+    const dummyRowDefaults = {
+      claimReference: "",
+      claimName: "",
+      mSurname: "",
+      mFirstnames: "",
+      mType: "",
+      mShare: "",
+      mProvenance: "",
+      mLegaldocs: "",
+      mDoclink: "",
+      mIdentity: "",
+      mWhatsapp: "",
+      mEmail: "",
+      mAddress: "",
+      mNotes: ""
+    };
+
+    function renderTable(filteredData, showDummyRow, labelText) {
+      const tbody = document.getElementById("liveBody");
+      tbody.innerHTML = "";
+
+      if (showDummyRow) {
+        const dummyRow = document.createElement("tr");
+        dummyRow.className = "dummy-row";
+        const indexTd = document.createElement("td");
+        indexTd.textContent = "0";
+        dummyRow.appendChild(indexTd);
+
+        const headers = Object.keys(fullData[0]);
+        headers.forEach(h => {
+          const td = document.createElement("td");
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = dummyRowDefaults[h] || "";
+          input.setAttribute("data-header", h);
+          td.appendChild(input);
+          dummyRow.appendChild(td);
+        });
+
+        tbody.appendChild(dummyRow);
+
+        // Prepopulate claimReference and claimName
+        const selectorVal = document.getElementById("claimSelector").value;
+        const [ref, name] = selectorVal.split("|");
+        const inputs = dummyRow.querySelectorAll("input");
+        inputs.forEach(input => {
+          const field = input.getAttribute("data-header");
+          if (field === "claimReference") input.value = ref;
+          if (field === "claimName") input.value = name;
+        });
+      }
+
+      filteredData.forEach((entry, i) => {
+        const tr = document.createElement("tr");
+        const indexTd = document.createElement("td");
+        indexTd.textContent = (i + 1).toString();
+        tr.appendChild(indexTd);
+        Object.keys(entry).forEach(h => {
+          const td = document.createElement("td");
+          td.textContent = entry[h] || "";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      const count = filteredData.length;
+      document.getElementById("viewLabel").innerHTML = `<strong>📖 Live Register:</strong> ${labelText} (${count} Record${count !== 1 ? "s" : ""})`;
+    }
+
+    document.getElementById("claimSelector").addEventListener("change", () => {
+      const value = document.getElementById("claimSelector").value;
+
+      let filtered = fullData;
+      let showDummyRow = false;
+      let labelText = "";
+
+      if (value === "ALL") {
+        labelText = "Showing ALL Members";
+      } else if (value === "REPS") {
+        filtered = fullData.filter(row => row.mType === "Claim Representative");
+        labelText = "Showing Claim Representatives ONLY";
+      } else {
+        const [ref, name] = value.split("|");
+        filtered = fullData.filter(row => row.claimReference === ref);
+        labelText = `Showing ${ref} ${name}`;
+        showDummyRow = true;
+        dummyRowDefaults.claimReference = ref;
+        dummyRowDefaults.claimName = name;
+      }
+
+      renderTable(filtered, showDummyRow, labelText);
+    });
+
+    document.getElementById("signinBtn").addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: "https://www.googleapis.com/auth/spreadsheets",
+        callback: (tokenResponse) => {
+          accessToken = tokenResponse.access_token;
+          document.getElementById("submitBtn").disabled = false;
+          alert("Signed in successfully. You may now edit and submit row 0.");
+        }
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    document.getElementById("submitBtn").addEventListener("click", () => {
+      const inputCells = document.querySelectorAll("tr.dummy-row input");
+      if (inputCells.length === 0) {
+        alert("No row 0 to submit. Please select a specific claim.");
+        return;
+      }
+
+      const editedValues = Array.from(inputCells).map(input => input.value.trim());
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}:append?valueInputOption=RAW`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ values: [editedValues] })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Row submitted:", data);
+        alert("Row successfully submitted to the register.");
+      })
+      .catch(err => {
+        console.error("Submission error:", err);
+        alert("Error submitting row. See console.");
+      });
+    });
+
+    fetch(APPS_SCRIPT_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (!Array.isArray(data) || data.length === 0) {
+          document.body.insertAdjacentHTML("beforeend", "<p>No register data found.</p>");
+          return;
+        }
+
+        fullData = data;
+
+        const headers = Object.keys(fullData[0]);
+        const headerRow = document.createElement("tr");
+        const indexHeader = document.createElement("th");
+        indexHeader.textContent = "#";
+        headerRow.appendChild(indexHeader);
+        headers.forEach(h => {
+          const th = document.createElement("th");
+          th.textContent = h;
+          headerRow.appendChild(th);
+        });
+        document.getElementById("liveHeaders").appendChild(headerRow);
+
+        renderTable(fullData, false, "Showing ALL Members");
+      })
+      .catch(err => {
+        console.error("Register load error:", err);
+        document.body.insertAdjacentHTML("beforeend", "<p>Unable to load register data.</p>");
+      });
+  </script>
+
+</body>
+</html>
