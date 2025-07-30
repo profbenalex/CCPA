@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Google Sheet Editor (FIXED)</title>
+  <title>Google Sheet Editor (Save Fix)</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     table { border-collapse: collapse; width: 100%; margin-top: 1em; }
@@ -13,7 +13,7 @@
   </style>
 </head>
 <body>
-  <h2>✅ Google Sheet Editor (Clean Version)</h2>
+  <h2>✅ Google Sheet Editor (with Save Fix)</h2>
   <button id="authButton">🔐 Sign in with Google</button>
   <button id="addRow" style="display:none;">➕ Add Row</button>
   <button id="saveChanges" style="display:none;">💾 Save</button>
@@ -25,16 +25,73 @@
     const sheetName = 'documents';
     let accessToken = '';
 
-    document.getElementById("authButton").addEventListener("click", () => {
-      const tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/spreadsheets',
-        callback: tokenResponse => {
-          accessToken = tokenResponse.access_token;
-          loadSheet();
-        }
+    // Attach listeners *after page loads*
+    window.addEventListener('DOMContentLoaded', () => {
+      const authBtn = document.getElementById("authButton");
+      const saveBtn = document.getElementById("saveChanges");
+      const addBtn = document.getElementById("addRow");
+
+      authBtn.addEventListener("click", () => {
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/spreadsheets',
+          callback: tokenResponse => {
+            accessToken = tokenResponse.access_token;
+            loadSheet();
+          }
+        });
+        tokenClient.requestAccessToken();
       });
-      tokenClient.requestAccessToken();
+
+      saveBtn.addEventListener("click", () => {
+        const table = document.querySelector("table");
+        const rows = Array.from(table.rows);
+        const values = [];
+
+        rows.forEach((tr, i) => {
+          const cells = Array.from(tr.cells).slice(0, -1); // ignore delete column
+          const row = cells.map(td => td.textContent.trim());
+          if (i === 0 || row.some(cell => cell !== '')) values.push(row);
+        });
+
+        console.log("Saving values:", values);
+
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?valueInputOption=RAW`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ values })
+        })
+        .then(res => res.json())
+        .then(() => {
+          alert("✅ Sheet updated successfully!");
+        })
+        .catch(err => {
+          alert("❌ Save failed: " + err);
+        });
+      });
+
+      addBtn.addEventListener("click", () => {
+        const table = document.querySelector("table");
+        const cols = table.rows[0].cells.length - 1;
+        const row = document.createElement("tr");
+
+        for (let i = 0; i < cols; i++) {
+          const td = document.createElement("td");
+          td.contentEditable = "true";
+          row.appendChild(td);
+        }
+
+        const tdDel = document.createElement("td");
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "🗑️";
+        delBtn.onclick = () => row.remove();
+        tdDel.appendChild(delBtn);
+        row.appendChild(tdDel);
+        table.appendChild(row);
+      });
     });
 
     function loadSheet() {
@@ -44,94 +101,48 @@
       .then(res => res.json())
       .then(data => {
         renderTable(data.values || []);
-        document.getElementById("addRow").style.display = "inline";
         document.getElementById("saveChanges").style.display = "inline";
+        document.getElementById("addRow").style.display = "inline";
       });
     }
 
     function renderTable(data) {
       const container = document.getElementById("tableContainer");
-      container.innerHTML = '';
+      container.innerHTML = "";
       const table = document.createElement("table");
-      const header = data[0];
-      const body = data.slice(1);
 
       // Header row
       const headerRow = document.createElement("tr");
-      header.forEach(h => {
+      data[0].forEach(h => {
         const th = document.createElement("th");
         th.textContent = h;
         headerRow.appendChild(th);
       });
-      const thDel = document.createElement("th");
-      thDel.textContent = "Delete";
-      headerRow.appendChild(thDel);
+      const delTh = document.createElement("th");
+      delTh.textContent = "Delete";
+      headerRow.appendChild(delTh);
       table.appendChild(headerRow);
 
       // Data rows
-      body.forEach(rowData => {
-        const row = document.createElement("tr");
-        header.forEach((_, colIdx) => {
+      data.slice(1).forEach(rowData => {
+        const tr = document.createElement("tr");
+        rowData.forEach(cell => {
           const td = document.createElement("td");
           td.contentEditable = "true";
-          td.textContent = rowData[colIdx] || '';
-          row.appendChild(td);
+          td.textContent = cell;
+          tr.appendChild(td);
         });
-        const delCell = document.createElement("td");
+        const tdDel = document.createElement("td");
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑️";
-        delBtn.onclick = () => row.remove();
-        delCell.appendChild(delBtn);
-        row.appendChild(delCell);
-        table.appendChild(row);
+        delBtn.onclick = () => tr.remove();
+        tdDel.appendChild(delBtn);
+        tr.appendChild(tdDel);
+        table.appendChild(tr);
       });
 
-      container.appendChild(table);
+      document.getElementById("tableContainer").appendChild(table);
     }
-
-    document.getElementById("addRow").addEventListener("click", () => {
-      const table = document.querySelector("table");
-      const headerLength = table.rows[0].cells.length - 1; // exclude delete column
-      const row = document.createElement("tr");
-
-      for (let i = 0; i < headerLength; i++) {
-        const td = document.createElement("td");
-        td.contentEditable = "true";
-        td.textContent = "";
-        row.appendChild(td);
-      }
-      const delCell = document.createElement("td");
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "🗑️";
-      delBtn.onclick = () => row.remove();
-      delCell.appendChild(delBtn);
-      row.appendChild(delCell);
-      table.appendChild(row);
-    });
-
-    document.getElementById("saveChanges").addEventListener("click", () => {
-      const table = document.querySelector("table");
-      const rows = Array.from(table.rows);
-      const values = [];
-
-      rows.forEach((tr, i) => {
-        const cells = Array.from(tr.cells).slice(0, -1); // skip delete button
-        const row = cells.map(td => td.textContent.trim());
-        if (i === 0 || row.some(cell => cell !== '')) values.push(row); // always include header, skip empty rows
-      });
-
-      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?valueInputOption=RAW`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ values })
-      })
-      .then(res => res.json())
-      .then(() => alert("✅ Changes saved to Google Sheets!"))
-      .catch(err => alert("❌ Failed to save: " + err));
-    });
   </script>
 </body>
 </html>
