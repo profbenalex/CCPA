@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h2>📄 bcquality Sheet Editor 3.1</h2>
+  <h2>📄 bcquality Sheet Editor 3.2</h2>
   <button id="authButton">🔐 Sign in with Google</button>
   <div id="outputContainer"></div>
   <button id="saveButton" style="display:none;">💾 Save Changes</button>
@@ -86,17 +86,18 @@
       headerRow.appendChild(thDelete);
       table.appendChild(headerRow);
 
-      // Data rows
+      // Data rows (start from index 1)
       for (let i = 1; i < sheetData.length; i++) {
         const row = sheetData[i];
         const tr = document.createElement("tr");
+        tr.setAttribute("data-index", i);  // store original index
 
         row.forEach((cell, j) => {
           const td = document.createElement("td");
           td.contentEditable = "true";
           td.textContent = cell;
           td.addEventListener("input", () => {
-            sheetData[i][j] = td.textContent.trim();
+            sheetData[i][j] = td.textContent.trim();  // update in-place
           });
           tr.appendChild(td);
         });
@@ -105,8 +106,9 @@
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑️";
         delBtn.onclick = () => {
-          sheetData.splice(i, 1);  // remove from data
-          renderTable();           // re-render cleanly
+          const index = parseInt(tr.getAttribute("data-index"));
+          sheetData.splice(index, 1);  // permanently remove
+          renderTable();               // re-render cleanly
         };
         tdDel.appendChild(delBtn);
         tr.appendChild(tdDel);
