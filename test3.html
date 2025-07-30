@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h2>📄 bcquality Sheet Editor 3.2</h2>
+  <h2>📄 bcquality Sheet Editor 3.3</h2>
   <button id="authButton">🔐 Sign in with Google</button>
   <div id="outputContainer"></div>
   <button id="saveButton" style="display:none;">💾 Save Changes</button>
@@ -86,19 +86,15 @@
       headerRow.appendChild(thDelete);
       table.appendChild(headerRow);
 
-      // Data rows (start from index 1)
+      // Data rows
       for (let i = 1; i < sheetData.length; i++) {
         const row = sheetData[i];
         const tr = document.createElement("tr");
-        tr.setAttribute("data-index", i);  // store original index
 
-        row.forEach((cell, j) => {
+        row.forEach(cell => {
           const td = document.createElement("td");
           td.contentEditable = "true";
           td.textContent = cell;
-          td.addEventListener("input", () => {
-            sheetData[i][j] = td.textContent.trim();  // update in-place
-          });
           tr.appendChild(td);
         });
 
@@ -106,9 +102,7 @@
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑️";
         delBtn.onclick = () => {
-          const index = parseInt(tr.getAttribute("data-index"));
-          sheetData.splice(index, 1);  // permanently remove
-          renderTable();               // re-render cleanly
+          tr.remove(); // Remove from DOM only
         };
         tdDel.appendChild(delBtn);
         tr.appendChild(tdDel);
@@ -125,17 +119,35 @@
     });
 
     document.getElementById("saveButton").addEventListener("click", () => {
+      const table = document.querySelector("table");
+      const newSheetData = [];
+
+      for (let row of table.rows) {
+        const rowData = [];
+        const cells = row.querySelectorAll("td, th");
+
+        for (let i = 0; i < cells.length - 1; i++) { // skip delete cell
+          rowData.push(cells[i].textContent.trim());
+        }
+
+        if (rowData.some(cell => cell !== "") || row === table.rows[0]) {
+          newSheetData.push(rowData);
+        }
+      }
+
       fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/documents?valueInputOption=RAW`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ values: sheetData })
+        body: JSON.stringify({ values: newSheetData })
       })
       .then(res => res.json())
       .then(response => {
         alert("✅ Sheet updated successfully!");
+        sheetData = newSheetData; // update in-memory version
+        renderTable();
       })
       .catch(err => {
         alert("❌ Failed to update sheet: " + err);
