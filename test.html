@@ -29,7 +29,7 @@
     });
 
     function fetchSheetData() {
-      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/register`, {
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/documents`, {
         headers: {
           Authorization: `Bearer ${accessToken}`
         }
