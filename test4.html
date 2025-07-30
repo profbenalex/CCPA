@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Google Sheet Editor</title>
+  <meta charset="UTF-8">
+  <title>Google Sheet Editor – FINAL FIX</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     table { border-collapse: collapse; width: 100%; margin-top: 1em; }
@@ -13,12 +13,11 @@
   </style>
 </head>
 <body>
-  <h2>📄 Google Sheet Editor</h2>
+  <h2>🛠 Google Sheet Editor – FINAL FIX</h2>
   <button id="authButton">🔐 Sign in with Google</button>
   <button id="addRow" style="display:none;">➕ Add Row</button>
   <button id="saveChanges" style="display:none;">💾 Save</button>
   <div id="tableContainer"></div>
-  <button id="testLog">🔍 Test Log</button>
 
   <script>
     const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
@@ -26,12 +25,6 @@
     const sheetName = 'documents';
     let accessToken = '';
 
-    // TEST LOG BUTTON
-    document.getElementById('testLog').addEventListener('click', () => {
-      console.log('✅ Test log: button works');
-    });
-
-    // AUTH
     document.getElementById("authButton").addEventListener("click", () => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
@@ -44,7 +37,6 @@
       tokenClient.requestAccessToken();
     });
 
-    // LOAD SHEET
     function loadSheet() {
       fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
         headers: { Authorization: `Bearer ${accessToken}` }
@@ -57,7 +49,6 @@
       });
     }
 
-    // RENDER TABLE
     function renderTable(data) {
       const container = document.getElementById("tableContainer");
       container.innerHTML = "";
@@ -75,7 +66,7 @@
       headerRow.appendChild(delTh);
       table.appendChild(headerRow);
 
-      // Data rows
+      // Rows
       data.slice(1).forEach(rowData => {
         const tr = document.createElement("tr");
         rowData.forEach(cell => {
@@ -84,7 +75,6 @@
           td.textContent = cell;
           tr.appendChild(td);
         });
-
         const tdDel = document.createElement("td");
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑️";
@@ -97,19 +87,16 @@
       container.appendChild(table);
     }
 
-    // ADD ROW
     document.getElementById("addRow").addEventListener("click", () => {
       const table = document.querySelector("table");
       const cols = table.rows[0].cells.length - 1;
       const tr = document.createElement("tr");
-
       for (let i = 0; i < cols; i++) {
         const td = document.createElement("td");
         td.contentEditable = "true";
         td.textContent = "";
         tr.appendChild(td);
       }
-
       const tdDel = document.createElement("td");
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑️";
@@ -119,33 +106,34 @@
       table.appendChild(tr);
     });
 
-    // SAVE
     document.getElementById("saveChanges").addEventListener("click", () => {
       const table = document.querySelector("table");
-      const rows = Array.from(table.rows);
       const values = [];
-
-      rows.forEach((tr, i) => {
-        const cells = Array.from(tr.cells).slice(0, -1); // skip delete column
-        const row = cells.map(td => td.textContent.trim());
-        if (i === 0 || row.some(cell => cell !== '')) {
-          values.push(row);
+      for (let row of table.rows) {
+        const cells = Array.from(row.cells).slice(0, -1);
+        const rowData = cells.map(cell => cell.textContent.trim());
+        if (values.length === 0 || rowData.some(cell => cell !== '')) {
+          values.push(rowData);
         }
-      });
+      }
 
-      console.log("📤 Saving values:", values); // ✅ Debug log
+      console.log("📤 Final Save values:", values);
 
-      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?valueInputOption=RAW`, {
-        method: "PUT",
+      // Clear + update using batchUpdate
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ values })
+        body: JSON.stringify({
+          valueInputOption: "RAW",
+          data: [{ range: sheetName, values }]
+        })
       })
       .then(res => res.json())
       .then(() => {
-        alert("✅ Sheet updated successfully!");
+        alert("✅ Sheet updated (with clear)!");
       })
       .catch(err => {
         alert("❌ Save failed: " + err);
