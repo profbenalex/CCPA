@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h2>📄 bcquality Sheet Editor</h2>
+  <h2>📄 bcquality Sheet Editor 3.1</h2>
   <button id="authButton">🔐 Sign in with Google</button>
   <div id="outputContainer"></div>
   <button id="saveButton" style="display:none;">💾 Save Changes</button>
@@ -87,12 +87,17 @@
       table.appendChild(headerRow);
 
       // Data rows
-      sheetData.slice(1).forEach((row) => {
+      for (let i = 1; i < sheetData.length; i++) {
+        const row = sheetData[i];
         const tr = document.createElement("tr");
-        row.forEach((cell) => {
+
+        row.forEach((cell, j) => {
           const td = document.createElement("td");
           td.contentEditable = "true";
           td.textContent = cell;
+          td.addEventListener("input", () => {
+            sheetData[i][j] = td.textContent.trim();
+          });
           tr.appendChild(td);
         });
 
@@ -100,12 +105,13 @@
         const delBtn = document.createElement("button");
         delBtn.textContent = "🗑️";
         delBtn.onclick = () => {
-          tr.remove();  // remove from DOM only
+          sheetData.splice(i, 1);  // remove from data
+          renderTable();           // re-render cleanly
         };
         tdDel.appendChild(delBtn);
         tr.appendChild(tdDel);
         table.appendChild(tr);
-      });
+      }
 
       outputContainer.appendChild(table);
     }
@@ -117,26 +123,6 @@
     });
 
     document.getElementById("saveButton").addEventListener("click", () => {
-      const table = document.querySelector("table");
-      const newData = [];
-
-      for (let row of table.rows) {
-        const rowData = [];
-        const cells = row.querySelectorAll("td, th");
-
-        for (let i = 0; i < cells.length - 1; i++) { // exclude delete cell
-          rowData.push(cells[i].textContent.trim());
-        }
-
-        // Only push non-empty rows or header
-        if (rowData.some(cell => cell !== "") || row === table.rows[0]) {
-          newData.push(rowData);
-        }
-      }
-
-      // Update sheetData and send to API
-      sheetData = newData;
-
       fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/documents?valueInputOption=RAW`, {
         method: "PUT",
         headers: {
@@ -156,4 +142,3 @@
   </script>
 </body>
 </html>
-
