@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Google Sheet Editor – Final Fix</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+    }
+    img {
+      width: 100%;
+      max-height: 120px;
+      object-fit: cover;
+    }
+    h1 {
+      text-align: center;
+      background-color: #e3e3e3;
+      margin: 0;
+      padding: 0.5em 0;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    h2 {
+      text-align: center;
+      font-size: 20px;
+      margin-top: 1em;
+    }
+    button, select {
+      font-size: 16px;
+      padding: 6px 12px;
+      margin: 0.5em 0.5em 0.5em 0;
+      height: 36px;
+      min-width: 120px;
+      box-sizing: border-box;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 0.5em;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background-color: #eee;
+    }
+    td[contenteditable="true"] {
+      background-color: #ffffcc;
+    }
+    select:disabled {
+      background-color: #eee;
+      color: #999;
+    }
+    #tableContainer {
+      overflow-x: auto;
+      margin: 1em;
+    }
+  </style>
+</head>
+<body>
+  <img src="bcquality.jpg" alt="BC Quality Logo">
+  <h1>Belgium Campus Q Repository V1.0</h1>
+
+  <h2>📄 Google Sheet Editor (Final)</h2>
+  <div style="text-align:center">
+    <button id="authButton">🔐 Sign in with Google</button>
+    <button id="addRow" style="display:none;">➕ Add Row</button>
+    <button id="saveChanges" style="display:none;">💾 Save</button>
+  </div>
+  <div id="tableContainer"></div>
+
+  <script>
+    const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
+    const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
+    const sheetName = 'documents';
+    let accessToken = '';
+    let categoryHeaders = [];
+    let categoryDataByHeader = {};
+
+    document.getElementById("authButton").addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: tokenResponse => {
+          accessToken = tokenResponse.access_token;
+          loadSheet();
+        }
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    async function loadSheet() {
+      const docRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const docData = await docRes.json();
+      renderTable(docData.values || []);
+      document.getElementById("addRow").style.display = "inline-block";
+      document.getElementById("saveChanges").style.display = "inline-block";
+
+      const catRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/categories`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const catData = await catRes.json();
+      const rows = catData.values;
+      categoryHeaders = rows[0];
+      for (let i = 0; i < categoryHeaders.length; i++) {
+        const colData = [];
+        for (let j = 1; j < rows.length; j++) {
+          if (rows[j][i]) colData.push(rows[j][i]);
+        }
+        categoryDataByHeader[categoryHeaders[i]] = colData;
+      }
+    }
+
+    function renderTable(data) {
+      const container = document.getElementById("tableContainer");
+      container.innerHTML = "";
+      const table = document.createElement("table");
+
+      const headerRow = document.createElement("tr");
+      data[0].forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        headerRow.appendChild(th);
+      });
+      const delTh = document.createElement("th");
+      delTh.textContent = "Delete";
+      headerRow.appendChild(delTh);
+      table.appendChild(headerRow);
+
+      data.slice(1).forEach(rowData => {
+        const tr = document.createElement("tr");
+        rowData.forEach((cell, colIndex) => {
+          const td = document.createElement("td");
+          const headerText = data[0][colIndex]?.trim();
+          const cleanCell = (cell || "").trim();
+
+          if (headerText === "Link" && cleanCell.startsWith("https://")) {
+            const btn = document.createElement("button");
+            btn.textContent = "🔗 Open Link";
+            btn.onclick = () => window.open(cleanCell, '_blank');
+            btn.dataset.link = cleanCell;
+            td.appendChild(btn);
+          } else {
+            td.contentEditable = "true";
+            td.textContent = cleanCell;
+          }
+
+          tr.appendChild(td);
+        });
+
+        const tdDel = document.createElement("td");
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "🗑️";
+        delBtn.onclick = () => tr.remove();
+        tdDel.appendChild(delBtn);
+        tr.appendChild(tdDel);
+        table.appendChild(tr);
+      });
+
+      container.appendChild(table);
+    }
+
+    document.getElementById("addRow").addEventListener("click", () => {
+      const table = document.querySelector("table");
+      const headerCells = table.rows[0].cells;
+      const cols = headerCells.length - 1;
+      const tr = document.createElement("tr");
+
+      for (let i = 0; i < cols; i++) {
+        const headerText = headerCells[i].textContent.trim();
+        const td = document.createElement("td");
+
+        if (headerText === "Domain") {
+          const select = document.createElement("select");
+          const defaultOption = document.createElement("option");
+          defaultOption.textContent = "Select";
+          defaultOption.value = "";
+          select.appendChild(defaultOption);
+          categoryHeaders.forEach(opt => {
+            const option = document.createElement("option");
+            option.value = option.textContent = opt;
+            select.appendChild(option);
+          });
+          td.appendChild(select);
+        } else if (headerText === "Theme") {
+          const select = document.createElement("select");
+          select.disabled = true;
+          td.appendChild(select);
+        } else {
+          td.contentEditable = "true";
+          td.textContent = "";
+        }
+
+        tr.appendChild(td);
+      }
+
+      const domainIndex = Array.from(headerCells).findIndex(h => h.textContent.trim() === "Domain");
+      const themeIndex = Array.from(headerCells).findIndex(h => h.textContent.trim() === "Theme");
+
+      const domainCell = tr.cells[domainIndex];
+      const themeCell = tr.cells[themeIndex];
+
+      if (domainCell && themeCell) {
+        const domainSelect = domainCell.querySelector("select");
+        const themeSelect = themeCell.querySelector("select");
+
+        domainSelect.addEventListener("change", () => {
+          const domain = domainSelect.value;
+          themeSelect.innerHTML = "";
+          if (domain && categoryDataByHeader[domain]) {
+            themeSelect.disabled = false;
+            categoryDataByHeader[domain].forEach(item => {
+              const option = document.createElement("option");
+              option.value = option.textContent = item;
+              themeSelect.appendChild(option);
+            });
+          } else {
+            themeSelect.disabled = true;
+          }
+        });
+      }
+
+      const tdDel = document.createElement("td");
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "🗑️";
+      delBtn.onclick = () => tr.remove();
+      tdDel.appendChild(delBtn);
+      tr.appendChild(tdDel);
+      table.appendChild(tr);
+    });
+
+    document.getElementById("saveChanges").addEventListener("click", async () => {
+      const table = document.querySelector("table");
+      const values = [];
+      for (let row of table.rows) {
+        const cells = Array.from(row.cells).slice(0, -1); // skip delete button
+        const rowData = cells.map(cell => {
+          const select = cell.querySelector("select");
+          if (select) {
+            return select.value.trim();
+          }
+          const btn = cell.querySelector("button");
+          if (btn && btn.dataset.link) {
+            return btn.dataset.link;
+          }
+          return cell.textContent.trim();
+        });
+        if (values.length === 0 || rowData.some(cell => cell !== '')) {
+          values.push(rowData);
+        }
+      }
+
+      console.log("📤 Final Save values:", values);
+
+      try {
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}:clear`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?valueInputOption=RAW`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ values })
+        });
+
+        const result = await res.json();
+        console.log("✅ Sheet updated:", result);
+        alert("✅ Sheet successfully cleared and updated!");
+      } catch (err) {
+        console.error("❌ Save failed:", err);
+        alert("❌ Save failed: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
