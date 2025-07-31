@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BCQ Viewer</title>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+    }
+    img.logo {
+      float: left;
+      max-height: 100px;
+      margin: 1em;
+    }
+    h1 {
+      text-align: center;
+      background-color: #e3e3e3;
+      margin: 0;
+      padding: 0.75em 0;
+      font-size: 28px;
+      font-weight: bold;
+      clear: both;
+    }
+    select {
+      font-size: 16px;
+      padding: 6px 12px;
+      margin: 0.5em;
+      height: 36px;
+      min-width: 150px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 0.5em;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background-color: #eee;
+    }
+    td.summary, td.content, td.impacts {
+      padding: 0;
+      vertical-align: top;
+    }
+    td.summary div, td.content div, td.impacts div {
+      white-space: normal !important;
+      width: 50ch;
+      max-width: 50ch;
+      height: 144px;
+      max-height: 144px;
+      line-height: 1.5;
+      overflow-y: auto;
+      overflow-wrap: break-word;
+      box-sizing: border-box;
+      padding: 0.5em;
+      background-color: #ffffcc;
+    }
+    #filters {
+      text-align: center;
+      margin-top: 1em;
+    }
+    #tableContainer {
+      overflow-x: auto;
+      margin: 1em;
+    }
+  </style>
+</head>
+<body>
+  <img src="bcquality.jpeg" alt="BC Quality Logo" class="logo">
+  <h1>Belgium Campus Quality Repository Viewer</h1>
+
+  <div id="filters">
+    <select id="domainFilter"><option value="">Select Domain</option></select>
+    <select id="themeFilter" disabled><option value="">Select Theme</option></select>
+    <select id="titleFilter" disabled><option value="">Select Title</option></select>
+  </div>
+
+  <div id="tableContainer"></div>
+
+  <script>
+    const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
+    const sheetName = 'documents';
+    const accessKey = ''; // if needed
+
+    let fullData = [];
+
+    async function loadSheet() {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
+        headers: { Authorization: `Bearer ${accessKey}` }
+      });
+      const data = await res.json();
+      fullData = data.values;
+      buildFilters(fullData);
+      renderTable(fullData);
+    }
+
+    function buildFilters(data) {
+      const domainIndex = data[0].indexOf("Domain");
+      const themeIndex = data[0].indexOf("Theme");
+      const titleIndex = data[0].indexOf("Title");
+
+      const domains = [...new Set(data.slice(1).map(row => row[domainIndex]).filter(Boolean))].sort();
+      const domainSelect = document.getElementById("domainFilter");
+      domainSelect.innerHTML = `<option value="">Select Domain</option>` + domains.map(d => `<option>${d}</option>`).join("");
+
+      domainSelect.addEventListener("change", () => {
+        const selectedDomain = domainSelect.value;
+        const filtered = data.filter((row, i) => i === 0 || row[domainIndex] === selectedDomain);
+        const themes = [...new Set(filtered.slice(1).map(r => r[themeIndex]).filter(Boolean))].sort();
+        const themeSelect = document.getElementById("themeFilter");
+        themeSelect.innerHTML = `<option value="">Select Theme</option>` + themes.map(t => `<option>${t}</option>`).join("");
+        themeSelect.disabled = false;
+
+        document.getElementById("titleFilter").disabled = true;
+        document.getElementById("titleFilter").innerHTML = `<option value="">Select Title</option>`;
+        renderTable(filtered);
+      });
+
+      document.getElementById("themeFilter").addEventListener("change", () => {
+        const selectedDomain = domainSelect.value;
+        const selectedTheme = document.getElementById("themeFilter").value;
+        const filtered = data.filter((row, i) => i === 0 || (row[domainIndex] === selectedDomain && row[themeIndex] === selectedTheme));
+        const titles = [...new Set(filtered.slice(1).map(r => r[titleIndex]).filter(Boolean))].sort();
+        const titleSelect = document.getElementById("titleFilter");
+        titleSelect.innerHTML = `<option value="">Select Title</option>` + titles.map(t => `<option>${t}</option>`).join("");
+        titleSelect.disabled = false;
+        renderTable(filtered);
+      });
+
+      document.getElementById("titleFilter").addEventListener("change", () => {
+        const selectedDomain = domainSelect.value;
+        const selectedTheme = document.getElementById("themeFilter").value;
+        const selectedTitle = document.getElementById("titleFilter").value;
+        const filtered = data.filter((row, i) => {
+          return i === 0 ||
+            (row[domainIndex] === selectedDomain &&
+             row[themeIndex] === selectedTheme &&
+             row[titleIndex] === selectedTitle);
+        });
+        renderTable(filtered);
+      });
+    }
+
+    function renderTable(data) {
+      const container = document.getElementById("tableContainer");
+      container.innerHTML = "";
+      const table = document.createElement("table");
+
+      const headerRow = document.createElement("tr");
+      data[0].forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h.trim();
+        headerRow.appendChild(th);
+      });
+      table.appendChild(headerRow);
+
+      data.slice(1).forEach(row => {
+        const tr = document.createElement("tr");
+        row.forEach((cell, i) => {
+          const td = document.createElement("td");
+          const headerText = data[0][i]?.trim();
+          const cleanCell = (cell || "").trim();
+
+          if (headerText === "Summary") {
+            td.classList.add("summary");
+            const div = document.createElement("div");
+            div.textContent = cleanCell;
+            td.appendChild(div);
+          } else if (headerText === "Content") {
+            td.classList.add("content");
+            const div = document.createElement("div");
+            div.textContent = cleanCell;
+            td.appendChild(div);
+          } else if (headerText === "Impacts") {
+            td.classList.add("impacts");
+            const div = document.createElement("div");
+            div.textContent = cleanCell;
+            td.appendChild(div);
+          } else if (headerText === "Link" && cleanCell.startsWith("http")) {
+            const btn = document.createElement("button");
+            btn.textContent = "🔗 Open Link";
+            btn.onclick = () => window.open(cleanCell, "_blank");
+            td.appendChild(btn);
+          } else {
+            td.textContent = cleanCell;
+          }
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      container.appendChild(table);
+    }
+
+    window.onload = loadSheet;
+  </script>
+</body>
+</html>
