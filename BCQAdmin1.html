@@ -59,10 +59,12 @@
       margin: 1em;
     }
 
-    /* Custom styles for text-heavy columns */
-    td.summary, td.content, td.impacts {
-      max-width: 600px;     /* ~100 characters */
-      max-height: 7.5em;    /* ~6 lines */
+    /* 🎯 Custom cell size styling for Summary, Content, Impacts */
+    td[data-header="Summary"],
+    td[data-header="Content"],
+    td[data-header="Impacts"] {
+      max-width: 600px;
+      max-height: 7.5em;
       overflow-y: auto;
       overflow-x: hidden;
       white-space: pre-wrap;
@@ -147,12 +149,8 @@
         rowData.forEach((cell, colIndex) => {
           const td = document.createElement("td");
           const headerText = data[0][colIndex]?.trim();
+          td.setAttribute("data-header", headerText);  // 🆕 Allow column targeting via CSS
           const cleanCell = (cell || "").trim();
-
-          // Add custom class to Summary, Content, Impacts
-          if (["Summary", "Content", "Impacts"].includes(headerText)) {
-            td.classList.add(headerText.toLowerCase());
-          }
 
           if (headerText === "Link" && cleanCell.startsWith("https://")) {
             const btn = document.createElement("button");
@@ -189,11 +187,7 @@
       for (let i = 0; i < cols; i++) {
         const headerText = headerCells[i].textContent.trim();
         const td = document.createElement("td");
-
-        // Add custom class if new row is for Summary, Content, Impacts
-        if (["Summary", "Content", "Impacts"].includes(headerText)) {
-          td.classList.add(headerText.toLowerCase());
-        }
+        td.setAttribute("data-header", headerText);  // 🆕 Ensures new rows also get styling
 
         if (headerText === "Domain") {
           const select = document.createElement("select");
