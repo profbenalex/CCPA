@@ -208,6 +208,7 @@
             btn.onclick = () => window.open(cleanCell, '_blank');
             btn.dataset.link = cleanCell;
             td.appendChild(btn);
+
           } else {
             if (headerText === "Summary" || headerText === "Content" || headerText === "Impacts") {
               const div = document.createElement("div");
@@ -219,7 +220,6 @@
               td.textContent = cleanCell;
             }
           }
-
           tr.appendChild(td);
         });
 
@@ -265,27 +265,26 @@
             select.appendChild(option);
           });
           td.appendChild(select);
-        } 
-        } else if (headerText === "Type") {
-          const select = document.createElement("select");
-          ["Unspecified", "Policy", "Framework", "Report", "Template", "Protocol", "Guideline"].forEach(opt => {
-            const option = document.createElement("option");
-            option.value = option.textContent = opt;
-            select.appendChild(option);
-          });
-          td.appendChild(select);
-
-        } else if (headerText === "Status") {
-          const select = document.createElement("select");
-          ["Draft", "Active", "Inactive"].forEach(opt => {
-            const option = document.createElement("option");
-            option.value = option.textContent = opt;
-            select.appendChild(option);
-          });
-          td.appendChild(select);
-else if (headerText === "Theme") {
+        } else if (headerText === "Theme") {
           const select = document.createElement("select");
           select.disabled = true;
+          td.appendChild(select);
+
+        } else if (headerText === "Type") {
+          const select = document.createElement("select");
+          ["", "Policy", "Framework", "Report", "Template", "Protocol", "Guideline", "Unspecified"].forEach(opt => {
+            const option = document.createElement("option");
+            option.value = option.textContent = opt;
+            select.appendChild(option);
+          });
+          td.appendChild(select);
+        } else if (headerText === "Status") {
+          const select = document.createElement("select");
+          ["", "Draft", "Active", "Inactive"].forEach(opt => {
+            const option = document.createElement("option");
+            option.value = option.textContent = opt;
+            select.appendChild(option);
+          });
           td.appendChild(select);
         } else {
           if (headerText === "Summary" || headerText === "Content" || headerText === "Impacts") {
