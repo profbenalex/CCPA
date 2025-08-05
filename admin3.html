@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BCQAdmin</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -66,15 +67,14 @@
       white-space: normal !important;
       width: 70ch; /* Set width to 70 characters */
       max-width: 70ch;
-      height: 144px; /* 6 rows * 24px (16px font * 1.5 line height) */
-      max-height: 144px;
+      height: auto;
+      min-height: 144px; /* 6 rows * ~24px (16px font * 1.5 line height) */
       line-height: 1.5;
       overflow-y: auto;
       overflow-wrap: break-word;
       box-sizing: border-box;
       padding: 0.5em;
       background-color: #ffffcc;
-      overflow-x: auto; /* Enable horizontal scrolling if content exceeds width */
     }
   </style>
 </head>
@@ -240,52 +240,13 @@
             select.appendChild(option);
           });
           td.appendChild(select);
-        } else if (headerText === "Status") {
-          const select = document.createElement("select");
-          ["", "Draft", "Active", "Inactive"].forEach(opt => {
-            const option = document.createElement("option");
-            option.value = option.textContent = opt;
-            select.appendChild(option);
-          });
-          td.appendChild(select);
-        } else {
-          if (headerText === "Summary" || headerText === "Content" || headerText === "Impacts") {
-            const div = document.createElement("div");
-            div.contentEditable = "true";
-            td.appendChild(div);
-          } else {
-            td.contentEditable = "true";
-            td.textContent = "";
-          }
+        } else if (headerText === "Link") {
+          const input = document.createElement("input");
+          input.type = "text";
+          td.appendChild(input);
         }
 
         tr.appendChild(td);
-      }
-
-      const domainIndex = Array.from(headerCells).findIndex(h => h.textContent.trim() === "Domain");
-      const themeIndex = Array.from(headerCells).findIndex(h => h.textContent.trim() === "Theme");
-
-      const domainCell = tr.cells[domainIndex];
-      const themeCell = tr.cells[themeIndex];
-
-      if (domainCell && themeCell) {
-        const domainSelect = domainCell.querySelector("select");
-        const themeSelect = themeCell.querySelector("select");
-
-        domainSelect.addEventListener("change", () => {
-          const domain = domainSelect.value;
-          themeSelect.innerHTML = "";
-          if (domain && categoryDataByHeader[domain]) {
-            themeSelect.disabled = false;
-            categoryDataByHeader[domain].forEach(item => {
-              const option = document.createElement("option");
-              option.value = option.textContent = item;
-              themeSelect.appendChild(option);
-            });
-          } else {
-            themeSelect.disabled = true;
-          }
-        });
       }
 
       const tdDel = document.createElement("td");
@@ -297,52 +258,32 @@
       table.appendChild(tr);
     });
 
-    document.getElementById("saveChanges").addEventListener("click", async () => {
-      const table = document.querySelector("table");
-      const values = [];
-      for (let row of table.rows) {
-        const cells = Array.from(row.cells).slice(0, -1);
-        const rowData = cells.map(cell => {
-          const select = cell.querySelector("select");
-          if (select) return select.value.trim();
-          const btn = cell.querySelector("button");
-          if (btn && btn.dataset.link) return btn.dataset.link;
-          const div = cell.querySelector("div[contenteditable]");
-          if (div) return div.textContent.trim();
-          return cell.textContent.trim();
-        });
-        if (values.length === 0 || rowData.some(cell => cell !== '')) {
-          values.push(rowData);
+    document.getElementById("saveChanges").addEventListener("click", () => {
+      const rows = Array.from(document.querySelectorAll("table tr")).slice(1);
+      const values = rows.map(row => {
+        const cells = row.cells;
+        const rowValues = [];
+        for (let i = 0; i < cells.length - 1; i++) {
+          rowValues.push(cells[i].textContent.trim());
         }
-      }
+        return rowValues;
+      });
 
-      console.log("📤 Final Save values:", values);
+      const body = {
+        values: values
+      };
 
-      try {
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}:clear`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          }
-        });
-
-        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?valueInputOption=RAW`, {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ values })
-        });
-
-        const result = await res.json();
-        console.log("✅ Sheet updated:", result);
-        alert("✅ Sheet successfully cleared and updated!");
-      } catch (err) {
-        console.error("❌ Save failed:", err);
-        alert("❌ Save failed: " + err.message);
-      }
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A2:Z`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      })
+      .then(response => response.json())
+      .then(data => alert("Changes saved successfully!"))
+      .catch(err => console.error("Error saving changes:", err));
     });
   </script>
 </body>
