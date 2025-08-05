@@ -1,0 +1,255 @@
+
+<!-- PART I – HTML & Styling -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CCPA Full View</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    header img {
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .banner { font-size:20px; font-weight:bold; background:#004080; color:#fff; padding:12px; text-align:center; margin-bottom:20px; }
+    .row-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; }
+    .row-controls > * { font-size:14px; height:38px; padding:0 12px; width:180px; box-sizing:border-box; }
+    select, input[type="number"], input[type="text"] { width:180px; }
+    button { cursor:pointer; width:180px; height:38px; }
+    table { border-collapse:collapse; table-layout:auto; width:auto; margin-top:16px; }
+    th, td { border:1px solid #ccc; padding:6px 8px; vertical-align:top; text-align:left; white-space:nowrap; }
+    th { background:#f2f2f2; }
+    tr.dummy-row { background:#e8f4ff; }
+    tr.dummy-row td { vertical-align:middle!important; background:#e8f4ff; padding:6px 8px; }
+    tr.dummy-row input, tr.dummy-row select {
+      width:100%; padding:1pt 6px; font-size:15px; font-weight:500;
+      height:2.4em; line-height:2.4em; border:none; background:#e8f4ff; box-sizing:border-box; text-align:left;
+    }
+    td[data-header="mProvenance"] { min-width:12em; }
+    td[data-header="mAddress"] { width:200%; }
+    td[data-header="mNotes"] { width:400%; }
+    td[data-header="gsIndex"], th[data-header="gsIndex"] { background:#ffffcc; color:#333; }
+    td[data-header="editIndex"], th[data-header="editIndex"] { background:#ccffcc; color:#333; }
+    tr.dummy-row td[data-header="gsIndex"], tr.dummy-row td[data-header="editIndex"] { background:#e8f4ff; }
+    .error-message { color:red; font-weight:bold; margin:10px 0; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="Crawford.jpg" alt="Crawford Header Image" />
+  </header>
+
+  <div class="banner">Members Register – Full Viewer 1.0</div>
+
+  <div style="display:flex; align-items:center; margin-bottom:20px;">
+    <h2 style="margin-right:12px;">🎯 Filter</h2>
+    <div class="row-controls">
+      <select id="claimSelector">
+        <option value="ALL" selected>ALL Members</option>
+        <option value="REPS">Claim Representatives ONLY</option>
+        <option value="A27|AdamsI">A27 AdamsI</option>
+        <option value="A460|AdamsMF">A460 AdamsMF</option>
+        <option value="A625|AdamH">A625 AdamH</option>
+        <option value="A661|ArnoldF">A661 ArnoldF</option>
+        <option value="A679|AlexanderJJ">A679 AlexanderJJ</option>
+        <option value="A88|AbrahamsK">A88 AbrahamsK</option>
+        <option value="B321|BenjaminWC">B321 BenjaminWC</option>
+        <option value="G126|GallantH">G126 GallantH</option>
+        <option value="G32|GirieE">G32 GirieE</option>
+        <option value="G34|GabrielL">G34 GabrielL</option>
+        <option value="H238|HlokoanaR">H238 HlokoanaR</option>
+        <option value="H425|Hoosain">H425 Hoosain</option>
+        <option value="H431|HassanA">H431 HassanA</option>
+        <option value="J101|JacobsR">J101 JacobsR</option>
+        <option value="J159|JohnstonAK">J159 JohnstonAK</option>
+        <option value="J63|JansenS">J63 JansenS</option>
+        <option value="K392|KamaloodienR">K392 KamaloodienR</option>
+        <option value="K85|Klaaste & St Clair">K85 Klaaste & St Clair</option>
+        <option value="L110|LowersCE">L110 LowersCE</option>
+        <option value="M2116|MatiZ">M2116 MatiZ</option>
+        <option value="N20|NellS">N20 NellS</option>
+        <option value="N23|NeumanH">N23 NeumanH</option>
+        <option value="O20|OliverBS">O20 OliverBS</option>
+        <option value="O51|OsmanE">O51 OsmanE</option>
+        <option value="S1404|SibekoY">S1404 SibekoY</option>
+        <option value="S250|SiljeurRS">S250 SiljeurRS</option>
+        <option value="S426|SamsodienA">S426 SamsodienA</option>
+        <option value="S457A|MtwanaJ">S457A MtwanaJ</option>
+        <option value="S713|SuleloS">S713 SuleloS</option>
+        <option value="S840|SadienD">S840 SadienD</option>
+        <option value="S881|SplintersP">S881 SplintersP</option>
+        <option value="T62|TaliepMS">T62 TaliepMS</option>
+        <option value="V202|Van Der Schyff">V202 Van Der Schyff</option>
+        <option value="W18|Brache & Michaels">W18 Brache & Michaels</option>
+      </select>
+    </div>
+  </div>
+
+  <p id="viewLabel"><strong>📖 Live Register:</strong> Showing ALL Members</p>
+  <table id="liveTable">
+    <thead id="liveHeaders"></thead>
+    <tbody id="liveBody"></tbody>
+  </table>
+
+
+<!-- PART II – JS Constants, Data, Table Logic -->
+<script type="text/javascript">
+  const CLIENT_ID = "290713393187-sfvukqfmffktomufhtuknnvcjk55e3a8.apps.googleusercontent.com";
+  const SHEET_ID = "1FUzgEatxn_pr2LkqDdRq0m0kPC6zsX0T0J3-MBifqD4";
+  const RANGE = "register";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyCKv12a0cEC9Hty0zqCXPff0Ubrv-oXOQVkTD1p_ZhC8X30sx7VEJQFpPZ5LtUA90FQ/exec";
+
+  let accessToken = "";
+  let fullData = [];
+  let editingIndex = null;
+  let loadedGsIndex = null;
+
+  const dummyRowDefaults = {
+    claimReference: "", claimName: "", mSurname: "", mFirstnames: "", mType: "Ordinary Member", mShare: "",
+    mProvenance: "Unspecified", mLegaldocs: "Pending", mDoclink: "", mIdentity: "",
+    mWhatsapp: "", mEmail: "", mAddress: "", mNotes: ""
+  };
+
+  const dropdownOptions = {
+    mType: ["Ordinary Member", "Claim Representative"],
+    mProvenance: ["Unspecified", "Restitution", "Cession", "Purchase", "Inheritance by Will", "Inheritance Intestate", "Customary Succession", "Power of Attorney"],
+    mLegaldocs: ["Pending", "In Progress", "Complete"]
+  };
+
+  // 🔃 Initial fetch of live register
+  fetch(APPS_SCRIPT_URL)
+    .then(res => res.ok ? res.json() : Promise.reject(new Error(`HTTP error! Status: ${res.status}`)))
+    .then(data => {
+      fullData = data.map((entry, i) => ({ ...entry, gsIndex: i + 2 }));
+      const headers = fullData.length > 0 ? Object.keys(fullData[0]).filter(h => h !== "gsIndex") : [];
+      const headerRow = document.createElement("tr");
+
+      const editIndexTh = document.createElement("th");
+      editIndexTh.textContent = "Edit Index";
+      editIndexTh.setAttribute("data-header", "editIndex");
+      headerRow.appendChild(editIndexTh);
+
+      const indexTh = document.createElement("th");
+      indexTh.textContent = "GS Row";
+      indexTh.setAttribute("data-header", "gsIndex");
+      headerRow.appendChild(indexTh);
+
+      headers.forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        th.setAttribute("data-header", h);
+        headerRow.appendChild(th);
+      });
+
+      document.getElementById("liveHeaders").appendChild(headerRow);
+      renderTable(fullData, false, "Showing ALL Members");
+    })
+    .catch(err => {
+      console.error("Register load error:", err.message);
+      const errorDiv = document.createElement("div");
+      errorDiv.className = "error-message";
+      errorDiv.textContent = `Unable to load register data: ${err.message}`;
+      document.getElementById("liveTable").before(errorDiv);
+      alert(`Error loading register: ${err.message}`);
+    });
+
+  function renderTable(filteredData, showDummyRow, labelText) {
+    const tbody = document.getElementById("liveBody");
+    tbody.innerHTML = "";
+
+    if (filteredData.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = fullData.length > 0 ? Object.keys(fullData[0]).length + 1 : 1;
+      td.textContent = "No data available";
+      td.style.textAlign = "center";
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    } else {
+      filteredData.forEach((entry, i) => {
+        const tr = document.createElement("tr");
+
+        const editIndexTd = document.createElement("td");
+        editIndexTd.textContent = (i + 1).toString();
+        editIndexTd.setAttribute("data-header", "editIndex");
+        tr.appendChild(editIndexTd);
+
+        const gsIndexTd = document.createElement("td");
+        gsIndexTd.textContent = entry.gsIndex !== undefined ? entry.gsIndex.toString() : (i + 1).toString();
+        gsIndexTd.setAttribute("data-header", "gsIndex");
+        tr.appendChild(gsIndexTd);
+
+        Object.keys(entry).forEach(h => {
+          if (h === "gsIndex") return;
+          const td = document.createElement("td");
+          td.setAttribute("data-header", h);
+
+          if (h === "mDoclink" && entry[h] && entry[h].startsWith("http")) {
+            const link = document.createElement("a");
+            link.href = entry[h];
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+
+            const button = document.createElement("button");
+            const ref = entry["claimReference"] || "Doc";
+            button.textContent = `View ${ref}`;
+
+            link.appendChild(button);
+            td.appendChild(link);
+          } else {
+            td.textContent = entry[h] || "";
+          }
+
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    const count = filteredData.length;
+    document.getElementById("viewLabel").innerHTML =
+      `<strong>📖 Live Register:</strong> ${labelText} (${count} Record${count !== 1 ? "s" : ""})`;
+  }
+
+  async function compactSheet() {
+    // (unchanged)
+  }
+</script>
+
+
+<!-- PART III – JS Event Listeners: Filter -->
+<script>
+  // 🔽 Filter on claim dropdown
+  document.getElementById("claimSelector").addEventListener("change", () => {
+    const value = document.getElementById("claimSelector").value;
+    let filtered = fullData;
+    let showDummyRow = false;
+    let labelText = "";
+
+    editingIndex = null;
+    loadedGsIndex = null;
+
+    if (value === "ALL") {
+      labelText = "Showing ALL Members";
+    } else if (value === "REPS") {
+      filtered = fullData.filter(row => row.mType === "Claim Representative");
+      labelText = "Showing Claim Representatives ONLY";
+      showDummyRow = true;
+    } else {
+      const [ref, name] = value.split("|");
+      filtered = fullData.filter(row => row.claimReference === ref);
+      labelText = `Showing ${ref} ${name}`;
+      showDummyRow = true;
+      dummyRowDefaults.claimReference = ref;
+      dummyRowDefaults.claimName = name;
+    }
+
+    renderTable(filtered, showDummyRow, labelText);
+  });
+</script>
+</body>
+</html>
