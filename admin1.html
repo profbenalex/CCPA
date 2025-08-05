@@ -1,7 +1,5 @@
-
-
 <script type="text/javascript">
-        var gk_isXlsx = false;
+ var gk_isXlsx = false;
         var gk_xlsxFileLookup = {};
         var gk_fileData = {};
         function filledCell(cell) {
@@ -39,14 +37,18 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><!DOCTYPE html>
+</script>
+<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>BCQAdmin</title>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+ <head>
+  <meta charset="utf-8"/>
+  <title>
+   BCQAdmin
+  </title>
+  <script async="" defer="" src="https://accounts.google.com/gsi/client">
+  </script>
   <style>
-    body {
+   body {
       font-family: Calibri, Arial, sans-serif;
       font-size: 16px;
       margin: 0;
@@ -103,11 +105,11 @@
       padding: 0;
       vertical-align: top;
     }
-    td.intent div, td.assertions div, td.impact div, td.evidence div {
+td.intent div, td.assertions div, td.impact div, td.evidence div {
       white-space: normal !important;
       width: 50ch;
       max-width: 50ch;
-      height: 144px; /* 6 rows * 24px (16px font * 1.5 line height) */
+      height: 144px;
       max-height: 144px;
       line-height: 1.5;
       overflow-y: auto;
@@ -117,20 +119,27 @@
       background-color: #ffffcc;
     }
   </style>
-</head>
-<body>
-  <img src="bcquality.jpeg" alt="BC Quality Logo" class="logo">
-  <h1>Belgium Campus Quality Repository V1.0</h1>
-
+ </head>
+ <body>
+  <img alt="BC Quality Logo" class="logo" src="bcquality.jpeg"/>
+  <h1>
+   Belgium Campus Quality Repository V1.0
+  </h1>
   <div style="text-align:center; clear:both;">
-    <button id="authButton">🔐 Sign in with Google</button>
-    <button id="addRow" style="display:none;">➕ Add Row</button>
-    <button id="saveChanges" style="display:none;">💾 Save</button>
+   <button id="authButton">
+    🔐 Sign in with Google
+   </button>
+   <button id="addRow" style="display:none;">
+    ➕ Add Row
+   </button>
+   <button id="saveChanges" style="display:none;">
+    💾 Save
+   </button>
   </div>
-  <div id="tableContainer"></div>
-
+  <div id="tableContainer">
+  </div>
   <script>
-    const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
+   const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
     const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
     const sheetName = 'documents';
     let accessToken = '';
@@ -391,5 +400,5 @@
       }
     });
   </script>
-</body>
+ </body>
 </html>
