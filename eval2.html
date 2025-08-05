@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BCQAdmin</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+    }
+    img.logo {
+      float: left;
+      max-height: 100px;
+      margin: 1em;
+    }
+    h1 {
+      text-align: center;
+      background-color: #e3e3e3;
+      margin: 0;
+      padding: 0.75em 0;
+      font-size: 28px;
+      font-weight: bold;
+      clear: both;
+    }
+    button, select {
+      font-size: 16px;
+      padding: 6px 12px;
+      margin: 0.5em 0.5em 0.5em 0;
+      height: 36px;
+      min-width: 120px;
+      box-sizing: border-box;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 0.5em;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background-color: #eee;
+    }
+    td[contenteditable="true"] {
+      background-color: #ffffcc;
+    }
+    select:disabled {
+      background-color: #eee;
+      color: #999;
+    }
+    #tableContainer {
+      overflow-x: auto;
+      margin: 1em;
+    }
+    td.intent, td.assertions, td.impact, td.evidence {
+      padding: 0;
+      vertical-align: top;
+    }
+    td.intent div, td.assertions div, td.impact div, td.evidence div {
+      white-space: normal !important;
+      width: 50ch;
+      max-width: 50ch;
+      height: 144px;
+      max-height: 144px;
+      line-height: 1.5;
+      overflow-y: auto;
+      overflow-wrap: break-word;
+      box-sizing: border-box;
+      padding: 0.5em;
+      background-color: #ffffcc;
+    }
+  </style>
+</head>
+<body>
+  <img src="bcquality.jpeg" alt="BC Quality Logo" class="logo">
+  <h1>Belgium Campus Quality Repository V1.0</h1>
+
+  <div style="text-align:center; clear:both;">
+    <button id="authButton">🔐 Sign in with Google</button>
+  </div>
+
+  <div style="text-align:center; margin-top:1em;">
+    <label for="filterDomain">Domain:</label>
+    <select id="filterDomain"><option value="">All</option></select>
+
+    <label for="filterTheme">Theme:</label>
+    <select id="filterTheme" disabled><option value="">All</option></select>
+
+    <label for="filterTitle">Title:</label>
+    <select id="filterTitle" disabled><option value="">All</option></select>
+  </div>
+
+  <div id="tableContainer"></div>
+
+  <script>
+    const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
+    const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
+    const sheetName = 'documents';
+    let accessToken = '';
+    let categoryHeaders = [];
+    let categoryDataByHeader = {};
+
+    function renderTable(data) {
+      const container = document.getElementById("tableContainer");
+      container.innerHTML = "";
+      const table = document.createElement("table");
+
+      const headerRow = document.createElement("tr");
+      data[0].forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h.trim();
+        headerRow.appendChild(th);
+      });
+      table.appendChild(headerRow);
+
+      data.slice(1).forEach(rowData => {
+        const tr = document.createElement("tr");
+        rowData.forEach((cell, colIndex) => {
+          const td = document.createElement("td");
+          const headerText = data[0][colIndex]?.trim();
+          const cleanCell = (cell || "").trim();
+
+          if (headerText === "Intent") td.classList.add("intent");
+          if (headerText === "Assertions") td.classList.add("assertions");
+          if (headerText === "Impact") td.classList.add("impact");
+          if (headerText === "Evidence") td.classList.add("evidence");
+
+          if (headerText === "Link" && cleanCell.startsWith("https://")) {
+            const btn = document.createElement("button");
+            btn.textContent = "🔗 Open Link";
+            btn.onclick = () => window.open(cleanCell, '_blank');
+            btn.dataset.link = cleanCell;
+            td.appendChild(btn);
+          } else {
+            if (["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+              const div = document.createElement("div");
+              div.contentEditable = "true";
+              div.textContent = cleanCell;
+              td.appendChild(div);
+            } else {
+              td.contentEditable = "true";
+              td.textContent = cleanCell;
+            }
+          }
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      container.appendChild(table);
+    }
+
+    function setupFilters(data) {
+      const domainSelect = document.getElementById("filterDomain");
+      const themeSelect = document.getElementById("filterTheme");
+      const titleSelect = document.getElementById("filterTitle");
+
+      const headers = data[0];
+      const domainIndex = headers.indexOf("Domain");
+      const themeIndex = headers.indexOf("Theme");
+      const titleIndex = headers.indexOf("Title");
+      const rows = data.slice(1);
+
+      const domains = [...new Set(rows.map(r => r[domainIndex]).filter(Boolean))];
+      domains.sort().forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = d;
+        domainSelect.appendChild(opt);
+      });
+
+      function updateThemes(domain) {
+        themeSelect.innerHTML = '<option value="">All</option>';
+        titleSelect.innerHTML = '<option value="">All</option>';
+        titleSelect.disabled = true;
+        themeSelect.disabled = true;
+        if (!domain) return;
+
+        const themes = [...new Set(rows.filter(r => r[domainIndex] === domain).map(r => r[themeIndex]).filter(Boolean))];
+        themes.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          themeSelect.appendChild(opt);
+        });
+        themeSelect.disabled = false;
+      }
+
+      function updateTitles(domain, theme) {
+        titleSelect.innerHTML = '<option value="">All</option>';
+        titleSelect.disabled = true;
+        if (!domain || !theme) return;
+
+        const titles = [...new Set(rows.filter(r =>
+          r[domainIndex] === domain && r[themeIndex] === theme
+        ).map(r => r[titleIndex]).filter(Boolean))];
+        titles.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          titleSelect.appendChild(opt);
+        });
+        titleSelect.disabled = false;
+      }
+
+      function filterData() {
+        const domain = domainSelect.value;
+        const theme = themeSelect.value;
+        const title = titleSelect.value;
+        const filtered = [headers, ...rows.filter(row => {
+          if (domain && row[domainIndex] !== domain) return false;
+          if (theme && row[themeIndex] !== theme) return false;
+          if (title && row[titleIndex] !== title) return false;
+          return true;
+        })];
+        renderTable(filtered);
+      }
+
+      domainSelect.addEventListener("change", () => {
+        updateThemes(domainSelect.value);
+        filterData();
+      });
+      themeSelect.addEventListener("change", () => {
+        updateTitles(domainSelect.value, themeSelect.value);
+        filterData();
+      });
+      titleSelect.addEventListener("change", filterData);
+    }
+
+    document.getElementById("authButton").addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: tokenResponse => {
+          accessToken = tokenResponse.access_token;
+          loadSheet();
+        }
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    async function loadSheet() {
+      try {
+        const docRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const docData = await docRes.json();
+        const allData = docData.values || [];
+
+        setupFilters(allData);
+        renderTable(allData);
+      } catch (err) {
+        console.error("Error loading sheet:", err);
+        alert("\u26a0\ufe0f Failed to load data.");
+      }
+    }
+  </script>
+</body>
+</html>
