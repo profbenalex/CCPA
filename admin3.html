@@ -59,19 +59,22 @@
       overflow-x: auto;
       margin: 1em;
     }
-    td.summary, td.content, td.impacts {
+
+    td.summary, td.content, td.impacts,
+    td.intent, td.assertions, td.impact, td.evidence {
       padding: 0;
       vertical-align: top;
     }
-    td.summary div, td.content div, td.impacts div {
+
+    td.summary div, td.content div, td.impacts div,
+    td.intent div, td.assertions div, td.impact div, td.evidence div {
       white-space: normal !important;
-      width: 70ch; /* Set width to 70 characters */
+      width: 70ch;
       max-width: 70ch;
-      height: auto;
-      min-height: 144px; /* 6 rows * ~24px (16px font * 1.5 line height) */
-      line-height: 1.5;
+      max-height: 144px;
       overflow-y: auto;
       overflow-wrap: break-word;
+      line-height: 1.5;
       box-sizing: border-box;
       padding: 0.5em;
       background-color: #ffffcc;
@@ -156,12 +159,8 @@
           const headerText = data[0][colIndex]?.trim();
           const cleanCell = (cell || "").trim();
 
-          if (headerText === "Summary") {
-            td.classList.add("summary");
-          } else if (headerText === "Content") {
-            td.classList.add("content");
-          } else if (headerText === "Impacts") {
-            td.classList.add("impacts");
+          if (["Summary", "Content", "Impacts", "Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+            td.classList.add(headerText.toLowerCase());
           }
 
           if (headerText === "Link" && cleanCell.startsWith("https://")) {
@@ -172,7 +171,7 @@
             td.appendChild(btn);
 
           } else {
-            if (headerText === "Summary" || headerText === "Content" || headerText === "Impacts") {
+            if (["Summary", "Content", "Impacts", "Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
               const div = document.createElement("div");
               div.contentEditable = "true";
               div.textContent = cleanCell;
@@ -207,12 +206,8 @@
         const headerText = headerCells[i].textContent.trim();
         const td = document.createElement("td");
 
-        if (headerText === "Summary") {
-          td.classList.add("summary");
-        } else if (headerText === "Content") {
-          td.classList.add("content");
-        } else if (headerText === "Impacts") {
-          td.classList.add("impacts");
+        if (["Summary", "Content", "Impacts", "Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+          td.classList.add(headerText.toLowerCase());
         }
 
         if (headerText === "Domain") {
