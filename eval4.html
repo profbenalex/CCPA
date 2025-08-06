@@ -75,41 +75,10 @@
       padding: 0.5em;
       background-color: #ffffcc;
     }
-
-    /* 📌 Evaluation Panel Styles */
-    #evaluationPanel {
-      margin: 2em;
-      padding: 1em;
-      border: 2px solid #ccc;
-      border-radius: 8px;
-      background-color: #f9f9f9;
-      max-width: 600px;
-    }
-
-    #evaluationPanel label {
-      display: block;
-      margin-top: 1em;
-      font-weight: bold;
-    }
-
-    .rating-group {
-      display: flex;
-      gap: 1em;
-      margin: 0.5em 0;
-    }
-
-    .rating-group label {
-      font-weight: normal;
-    }
-
-    textarea {
-      width: 100%;
-      height: 100px;
-      resize: vertical;
-      font-family: Calibri, Arial, sans-serif;
-    }
   </style>
 </head>
+
+
 
 
 <body>
@@ -133,62 +102,38 @@
 
   <div id="tableContainer"></div>
 
-  <!-- 📌 Evaluation Panel -->
-  <div id="evaluationPanel" style="display:none;">
-    <h2>Evaluator Feedback</h2>
+  <!-- 🆕 Evaluation Toggle Button -->
+  <div style="text-align:center; margin-top: 1em;">
+    <button id="toggleEvalFormBtn">📝 Evaluate Document</button>
+  </div>
 
-    <label for="contextSelect">Context:</label>
+  <!-- 🆕 Evaluation Form -->
+  <div id="evaluationForm" style="display: none; margin: 2em; padding: 1em; border: 2px solid #ccc; border-radius: 8px; background: #f9f9f9; max-width: 600px;">
+    <h3>Evaluation Form</h3>
+
+    <label for="contextSelect"><strong>Context:</strong></label>
     <select id="contextSelect">
       <option value="Internal">Internal</option>
       <option value="External">External</option>
     </select>
 
-    <label>Relevance:</label>
-    <div class="rating-group" id="relevanceGroup">
-      <label><input type="radio" name="relevance" value="1"> 1</label>
-      <label><input type="radio" name="relevance" value="2"> 2</label>
-      <label><input type="radio" name="relevance" value="3"> 3</label>
-      <label><input type="radio" name="relevance" value="4"> 4</label>
-      <label><input type="radio" name="relevance" value="5"> 5</label>
-    </div>
+    <br><br>
 
-    <label>Scope:</label>
-    <div class="rating-group" id="scopeGroup">
-      <label><input type="radio" name="scope" value="1"> 1</label>
-      <label><input type="radio" name="scope" value="2"> 2</label>
-      <label><input type="radio" name="scope" value="3"> 3</label>
-      <label><input type="radio" name="scope" value="4"> 4</label>
-      <label><input type="radio" name="scope" value="5"> 5</label>
-    </div>
+    <label for="userEmailDisplay"><strong>User:</strong></label>
+    <input type="text" id="userEmailDisplay" readonly style="width: 100%;">
 
-    <label>Clarity:</label>
-    <div class="rating-group" id="clarityGroup">
-      <label><input type="radio" name="clarity" value="1"> 1</label>
-      <label><input type="radio" name="clarity" value="2"> 2</label>
-      <label><input type="radio" name="clarity" value="3"> 3</label>
-      <label><input type="radio" name="clarity" value="4"> 4</label>
-      <label><input type="radio" name="clarity" value="5"> 5</label>
-    </div>
+    <br><br>
 
-    <label>Applicability:</label>
-    <div class="rating-group" id="applicabilityGroup">
-      <label><input type="radio" name="applicability" value="1"> 1</label>
-      <label><input type="radio" name="applicability" value="2"> 2</label>
-      <label><input type="radio" name="applicability" value="3"> 3</label>
-      <label><input type="radio" name="applicability" value="4"> 4</label>
-      <label><input type="radio" name="applicability" value="5"> 5</label>
-    </div>
+    <button id="submitEvalBtn">✅ Submit Evaluation</button>
 
-    <label for="commentBox">Comment:</label>
-    <textarea id="commentBox" placeholder="Enter your evaluation comment here..."></textarea>
-
-    <button id="submitEvaluationBtn">Submit Evaluation</button>
-
-    <!-- Hidden Fields -->
-    <input type="hidden" id="userEmail">
+    <!-- Hidden Inputs -->
     <input type="hidden" id="documentName">
     <input type="hidden" id="versionNumber">
+    <input type="hidden" id="userEmail">
   </div>
+
+
+
 
 
 <script>
@@ -198,37 +143,34 @@
   let accessToken = '';
   let userEmail = '';
 
-  // 🔐 Google Sign-In and Email Extraction
   document.getElementById("authButton").addEventListener("click", () => {
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
-      callback: tokenResponse => {
+      scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email',
+      callback: async (tokenResponse) => {
         accessToken = tokenResponse.access_token;
 
-        // Decode ID token to extract email
-        google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (response) => {
-            const idToken = response.credential;
-            const base64Url = idToken.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            userEmail = JSON.parse(jsonPayload).email;
-            document.getElementById("userEmail").value = userEmail;
-          }
-        });
-        google.accounts.id.prompt();
+        // Get user email
+        try {
+          const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+          const userData = await userRes.json();
+          userEmail = userData.email || '';
+          document.getElementById("userEmail").value = userEmail;
+          document.getElementById("userEmailDisplay").value = userEmail;
+        } catch (e) {
+          alert("❌ Failed to get user email.");
+          return;
+        }
 
         loadSheet();
       }
     });
+
     tokenClient.requestAccessToken();
   });
 
-  // 📥 Load data and populate form
   async function loadSheet() {
     try {
       const docRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
@@ -240,78 +182,57 @@
       setupFilters(allData);
       renderTable(allData);
 
-      // Populate document/version into hidden inputs and show panel
       const headers = allData[0];
       const firstRow = allData[1];
       const docIndex = headers.indexOf("Document");
       const verIndex = headers.indexOf("Version");
+
       document.getElementById("documentName").value = firstRow[docIndex] || '';
       document.getElementById("versionNumber").value = firstRow[verIndex] || '';
-      document.getElementById("evaluationPanel").style.display = "block";
-
     } catch (err) {
       console.error("Error loading sheet:", err);
       alert("⚠️ Failed to load data.");
     }
   }
 
-  // 📝 Submit evaluation to 'evaluations' sheet
-  document.getElementById("submitEvaluationBtn").addEventListener("click", async () => {
-    const doc = document.getElementById("documentName").value;
-    const version = document.getElementById("versionNumber").value;
+  // Toggle Evaluation Form visibility
+  document.getElementById("toggleEvalFormBtn").addEventListener("click", () => {
+    const form = document.getElementById("evaluationForm");
+    form.style.display = (form.style.display === "none") ? "block" : "none";
+  });
+
+  // Submit Evaluation
+  document.getElementById("submitEvalBtn").addEventListener("click", async () => {
+    const documentName = document.getElementById("documentName").value;
+    const versionNumber = document.getElementById("versionNumber").value;
     const context = document.getElementById("contextSelect").value;
-    const comment = document.getElementById("commentBox").value.trim();
     const user = document.getElementById("userEmail").value;
 
-    const getRating = (name) => {
-      const radios = document.getElementsByName(name);
-      for (let radio of radios) {
-        if (radio.checked) return radio.value;
-      }
-      return '';
-    };
-
-    const relevance = getRating("relevance");
-    const scope = getRating("scope");
-    const clarity = getRating("clarity");
-    const applicability = getRating("applicability");
-
-    if (!relevance || !scope || !clarity || !applicability || !comment) {
-      alert("⚠️ Please complete all fields before submitting.");
+    if (!documentName || !versionNumber || !user) {
+      alert("⚠️ Missing data. Please make sure you're signed in and a document is loaded.");
       return;
     }
 
-    const evaluationRow = [
-      doc, version, context, user,
-      relevance, scope, clarity, applicability, comment
-    ];
+    const row = [[documentName, versionNumber, context, user]];
 
     try {
-      const appendRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations:append?valueInputOption=USER_ENTERED`, {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations:append?valueInputOption=USER_ENTERED`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ values: [evaluationRow] })
+        body: JSON.stringify({ values: row })
       });
 
-      if (!appendRes.ok) throw new Error("Failed to write to sheet");
+      if (!res.ok) throw new Error("Failed to write");
 
-      alert("✅ Evaluation submitted successfully!");
-
-      // Clear inputs
-      document.getElementById("commentBox").value = '';
-      ["relevance", "scope", "clarity", "applicability"].forEach(name => {
-        document.querySelectorAll(`input[name="${name}"]`).forEach(el => el.checked = false);
-      });
-
+      alert("✅ Evaluation submitted!");
     } catch (err) {
       console.error(err);
-      alert("❌ Error submitting evaluation.");
+      alert("❌ Submission error.");
     }
   });
 </script>
-
 </body>
 </html>
