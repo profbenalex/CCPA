@@ -108,55 +108,58 @@
     let categoryHeaders = [];
     let categoryDataByHeader = {};
 
-    function renderTable(data) {
-      const container = document.getElementById("tableContainer");
-      container.innerHTML = "";
-      const table = document.createElement("table");
+function renderTable(data) {
+  const container = document.getElementById("tableContainer");
+  container.innerHTML = "";
+  const table = document.createElement("table");
 
-      const headerRow = document.createElement("tr");
-      data[0].forEach(h => {
-        const th = document.createElement("th");
-        th.textContent = h.trim();
-        headerRow.appendChild(th);
-      });
-      table.appendChild(headerRow);
+  // Render header row
+  const headerRow = document.createElement("tr");
+  data[0].forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h.trim();
+    headerRow.appendChild(th);
+  });
+  table.appendChild(headerRow);
 
-      data.slice(1).forEach(rowData => {
-        const tr = document.createElement("tr");
-        rowData.forEach((cell, colIndex) => {
-          const td = document.createElement("td");
-          const headerText = data[0][colIndex]?.trim();
-          const cleanCell = (cell || "").trim();
+  // Render only the first matching row (if it exists)
+  const firstRow = data[1];
+  if (firstRow) {
+    const tr = document.createElement("tr");
+    firstRow.forEach((cell, colIndex) => {
+      const td = document.createElement("td");
+      const headerText = data[0][colIndex]?.trim();
+      const cleanCell = (cell || "").trim();
 
-          if (headerText === "Intent") td.classList.add("intent");
-          if (headerText === "Assertions") td.classList.add("assertions");
-          if (headerText === "Impact") td.classList.add("impact");
-          if (headerText === "Evidence") td.classList.add("evidence");
+      if (headerText === "Intent") td.classList.add("intent");
+      if (headerText === "Assertions") td.classList.add("assertions");
+      if (headerText === "Impact") td.classList.add("impact");
+      if (headerText === "Evidence") td.classList.add("evidence");
 
-          if (headerText === "Link" && cleanCell.startsWith("https://")) {
-            const btn = document.createElement("button");
-            btn.textContent = "🔗 Open Link";
-            btn.onclick = () => window.open(cleanCell, '_blank');
-            btn.dataset.link = cleanCell;
-            td.appendChild(btn);
-          } else {
-            if (["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
-              const div = document.createElement("div");
-              div.contentEditable = "true";
-              div.textContent = cleanCell;
-              td.appendChild(div);
-            } else {
-              td.contentEditable = "true";
-              td.textContent = cleanCell;
-            }
-          }
-          tr.appendChild(td);
-        });
-        table.appendChild(tr);
-      });
+      if (headerText === "Link" && cleanCell.startsWith("https://")) {
+        const btn = document.createElement("button");
+        btn.textContent = "🔗 Open Link";
+        btn.onclick = () => window.open(cleanCell, '_blank');
+        btn.dataset.link = cleanCell;
+        td.appendChild(btn);
+      } else {
+        if (["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+          const div = document.createElement("div");
+          div.contentEditable = "true";
+          div.textContent = cleanCell;
+          td.appendChild(div);
+        } else {
+          td.contentEditable = "true";
+          td.textContent = cleanCell;
+        }
+      }
+      tr.appendChild(td);
+    });
+    table.appendChild(tr);
+  }
 
-      container.appendChild(table);
-    }
+  container.appendChild(table);
+}
 
     function setupFilters(data) {
       const domainSelect = document.getElementById("filterDomain");
@@ -208,21 +211,19 @@
         documentSelect.disabled = false;
       }
 
-function filterData() {
-  const domain = domainSelect.value;
-  const theme = themeSelect.value;
-  const document = documentSelect.value;
+      function filterData() {
+        const domain = domainSelect.value;
+        const theme = themeSelect.value;
+        const document = documentSelect.value;
+        const filtered = [headers, ...rows.filter(row => {
+          if (domain && row[domainIndex] !== domain) return false;
+          if (theme && row[themeIndex] !== theme) return false;
+          if (document && row[documentIndex] !== document) return false;
+          return true;
+        })];
+        renderTable(filtered);
+      }
 
-  const matchingRows = rows.filter(row => {
-    if (domain && row[domainIndex] !== domain) return false;
-    if (theme && row[themeIndex] !== theme) return false;
-    if (document && row[documentIndex] !== document) return false;
-    return true;
-  });
-
-  const filtered = [headers, ...matchingRows.slice(0, 1)];
-  renderTable(filtered);
-}
       domainSelect.addEventListener("change", () => {
         updateThemes(domainSelect.value);
         filterData();
