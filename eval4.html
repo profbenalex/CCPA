@@ -75,8 +75,43 @@
       padding: 0.5em;
       background-color: #ffffcc;
     }
+
+    /* 📌 Evaluation Panel Styles */
+    #evaluationPanel {
+      margin: 2em;
+      padding: 1em;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+      max-width: 600px;
+    }
+
+    #evaluationPanel label {
+      display: block;
+      margin-top: 1em;
+      font-weight: bold;
+    }
+
+    .rating-group {
+      display: flex;
+      gap: 1em;
+      margin: 0.5em 0;
+    }
+
+    .rating-group label {
+      font-weight: normal;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      resize: vertical;
+      font-family: Calibri, Arial, sans-serif;
+    }
   </style>
 </head>
+
+
 <body>
   <img src="bcquality.jpeg" alt="BC Quality Logo" class="logo">
   <h1>Belgium Campus Quality Repository V1.0</h1>
@@ -98,38 +133,61 @@
 
   <div id="tableContainer"></div>
 
-  <!-- Evaluator Input Section -->
-  <div style="margin:2em;">
-    <button onclick="toggleEvaluator()" style="font-size:16px;">📝 Show Evaluation Form</button>
-    <div id="evaluatorSection" style="display:none; margin-top:1em; border:1px solid #ccc; padding:1em; background:#f9f9f9;">
-      <h3>Evaluator Input</h3>
+  <!-- 📌 Evaluation Panel -->
+  <div id="evaluationPanel" style="display:none;">
+    <h2>Evaluator Feedback</h2>
 
-      <label for="contextSelect">Context:</label>
-      <select id="contextSelect">
-        <option value="">Select</option>
-        <option value="Internal">Internal</option>
-        <option value="External">External</option>
-      </select><br><br>
+    <label for="contextSelect">Context:</label>
+    <select id="contextSelect">
+      <option value="Internal">Internal</option>
+      <option value="External">External</option>
+    </select>
 
-      <div id="ratingsContainer">
-        <label>Relevance:</label><br>
-        <span id="relevanceRadios"></span><br><br>
-
-        <label>Scope:</label><br>
-        <span id="scopeRadios"></span><br><br>
-
-        <label>Clarity:</label><br>
-        <span id="clarityRadios"></span><br><br>
-
-        <label>Applicability:</label><br>
-        <span id="applicabilityRadios"></span><br><br>
-      </div>
-
-      <label for="commentBox">Comment:</label><br>
-      <textarea id="commentBox" rows="5" cols="60" placeholder="Enter your comment here..."></textarea><br><br>
-
-      <button onclick="submitEvaluation()">📤 Submit Evaluation</button>
+    <label>Relevance:</label>
+    <div class="rating-group" id="relevanceGroup">
+      <label><input type="radio" name="relevance" value="1"> 1</label>
+      <label><input type="radio" name="relevance" value="2"> 2</label>
+      <label><input type="radio" name="relevance" value="3"> 3</label>
+      <label><input type="radio" name="relevance" value="4"> 4</label>
+      <label><input type="radio" name="relevance" value="5"> 5</label>
     </div>
+
+    <label>Scope:</label>
+    <div class="rating-group" id="scopeGroup">
+      <label><input type="radio" name="scope" value="1"> 1</label>
+      <label><input type="radio" name="scope" value="2"> 2</label>
+      <label><input type="radio" name="scope" value="3"> 3</label>
+      <label><input type="radio" name="scope" value="4"> 4</label>
+      <label><input type="radio" name="scope" value="5"> 5</label>
+    </div>
+
+    <label>Clarity:</label>
+    <div class="rating-group" id="clarityGroup">
+      <label><input type="radio" name="clarity" value="1"> 1</label>
+      <label><input type="radio" name="clarity" value="2"> 2</label>
+      <label><input type="radio" name="clarity" value="3"> 3</label>
+      <label><input type="radio" name="clarity" value="4"> 4</label>
+      <label><input type="radio" name="clarity" value="5"> 5</label>
+    </div>
+
+    <label>Applicability:</label>
+    <div class="rating-group" id="applicabilityGroup">
+      <label><input type="radio" name="applicability" value="1"> 1</label>
+      <label><input type="radio" name="applicability" value="2"> 2</label>
+      <label><input type="radio" name="applicability" value="3"> 3</label>
+      <label><input type="radio" name="applicability" value="4"> 4</label>
+      <label><input type="radio" name="applicability" value="5"> 5</label>
+    </div>
+
+    <label for="commentBox">Comment:</label>
+    <textarea id="commentBox" placeholder="Enter your evaluation comment here..."></textarea>
+
+    <button id="submitEvaluationBtn">Submit Evaluation</button>
+
+    <!-- Hidden Fields -->
+    <input type="hidden" id="userEmail">
+    <input type="hidden" id="documentName">
+    <input type="hidden" id="versionNumber">
   </div>
 
 
@@ -138,139 +196,39 @@
   const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
   const sheetName = 'documents';
   let accessToken = '';
-  let categoryHeaders = [];
-  let categoryDataByHeader = {};
+  let userEmail = '';
 
-  function renderTable(data) {
-    const container = document.getElementById("tableContainer");
-    container.innerHTML = "";
-
-    const headers = data[0];
-    const firstRow = data[1];
-    if (!firstRow) return;
-
-    const table1Fields = ["Domain", "Theme", "Document", "Type", "Version", "Status", "Authors", "Owner", "Link"];
-    const table2Fields = ["Intent", "Assertions", "Impact", "Evidence"];
-
-    const table1 = document.createElement("table");
-    const headerRow1 = document.createElement("tr");
-    table1Fields.forEach(field => {
-      const th = document.createElement("th");
-      th.textContent = field;
-      headerRow1.appendChild(th);
-    });
-    table1.appendChild(headerRow1);
-
-    const row1 = document.createElement("tr");
-    table1Fields.forEach(field => {
-      const colIndex = headers.indexOf(field);
-      const td = document.createElement("td");
-      const cleanCell = (firstRow[colIndex] || "").trim();
-
-      if (field === "Link" && cleanCell.startsWith("https://")) {
-        const btn = document.createElement("button");
-        btn.textContent = "🔗 Open Link";
-        btn.onclick = () => window.open(cleanCell, '_blank');
-        btn.dataset.link = cleanCell;
-        td.appendChild(btn);
-      } else {
-        td.contentEditable = "true";
-        td.textContent = cleanCell;
-      }
-
-      row1.appendChild(td);
-    });
-    table1.appendChild(row1);
-    container.appendChild(table1);
-
-    const table2 = document.createElement("table");
-    const headerRow2 = document.createElement("tr");
-    table2Fields.forEach(field => {
-      const th = document.createElement("th");
-      th.textContent = field;
-      headerRow2.appendChild(th);
-    });
-    table2.appendChild(headerRow2);
-
-    const row2 = document.createElement("tr");
-    table2Fields.forEach(field => {
-      const colIndex = headers.indexOf(field);
-      const td = document.createElement("td");
-      td.classList.add(field.toLowerCase());
-      const cleanCell = (firstRow[colIndex] || "").trim();
-      const div = document.createElement("div");
-      div.contentEditable = "true";
-      div.textContent = cleanCell;
-      td.appendChild(div);
-      row2.appendChild(td);
-    });
-    table2.appendChild(row2);
-    container.appendChild(table2);
-  }
-
-
-
-      const themes = [...new Set(rows.filter(r => r[domainIndex] === domain).map(r => r[themeIndex]).filter(Boolean))];
-      themes.sort().forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = opt.textContent = t;
-        themeSelect.appendChild(opt);
-      });
-      themeSelect.disabled = false;
-    }
-
-    function updateDocuments(domain, theme) {
-      documentSelect.innerHTML = '<option value="">All</option>';
-      documentSelect.disabled = true;
-      if (!domain || !theme) return;
-
-      const documents = [...new Set(rows.filter(r =>
-        r[domainIndex] === domain && r[themeIndex] === theme
-      ).map(r => r[documentIndex]).filter(Boolean))];
-      documents.sort().forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = opt.textContent = t;
-        documentSelect.appendChild(opt);
-      });
-      documentSelect.disabled = false;
-    }
-
-    function filterData() {
-      const domain = domainSelect.value;
-      const theme = themeSelect.value;
-      const document = documentSelect.value;
-      const filtered = [headers, ...rows.filter(row => {
-        if (domain && row[domainIndex] !== domain) return false;
-        if (theme && row[themeIndex] !== theme) return false;
-        if (document && row[documentIndex] !== document) return false;
-        return true;
-      })];
-      renderTable(filtered);
-    }
-
-    domainSelect.addEventListener("change", () => {
-      updateThemes(domainSelect.value);
-      filterData();
-    });
-    themeSelect.addEventListener("change", () => {
-      updateDocuments(domainSelect.value, themeSelect.value);
-      filterData();
-    });
-    documentSelect.addEventListener("change", filterData);
-  }
-
+  // 🔐 Google Sign-In and Email Extraction
   document.getElementById("authButton").addEventListener("click", () => {
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: 'https://www.googleapis.com/auth/spreadsheets',
       callback: tokenResponse => {
         accessToken = tokenResponse.access_token;
+
+        // Decode ID token to extract email
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            const idToken = response.credential;
+            const base64Url = idToken.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            userEmail = JSON.parse(jsonPayload).email;
+            document.getElementById("userEmail").value = userEmail;
+          }
+        });
+        google.accounts.id.prompt();
+
         loadSheet();
       }
     });
     tokenClient.requestAccessToken();
   });
 
+  // 📥 Load data and populate form
   async function loadSheet() {
     try {
       const docRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
@@ -281,45 +239,36 @@
 
       setupFilters(allData);
       renderTable(allData);
+
+      // Populate document/version into hidden inputs and show panel
+      const headers = allData[0];
+      const firstRow = allData[1];
+      const docIndex = headers.indexOf("Document");
+      const verIndex = headers.indexOf("Version");
+      document.getElementById("documentName").value = firstRow[docIndex] || '';
+      document.getElementById("versionNumber").value = firstRow[verIndex] || '';
+      document.getElementById("evaluationPanel").style.display = "block";
+
     } catch (err) {
       console.error("Error loading sheet:", err);
-      alert(⚠️ Failed to load data.");
+      alert("⚠️ Failed to load data.");
     }
   }
 
-  // Evaluator Module Logic
-  const evaluationSheet = 'evaluations';
-
-  function toggleEvaluator() {
-    const section = document.getElementById("evaluatorSection");
-    section.style.display = section.style.display === "none" ? "block" : "none";
-  }
-
-  ["relevance", "scope", "clarity", "applicability"].forEach(field => {
-    const container = document.getElementById(`${field}Radios`);
-    for (let i = 1; i <= 5; i++) {
-      const radio = document.createElement("input");
-      radio.type = "radio";
-      radio.name = field;
-      radio.value = i;
-      radio.id = `${field}_${i}`;
-      container.appendChild(radio);
-
-      const label = document.createElement("label");
-      label.htmlFor = radio.id;
-      label.textContent = i;
-      container.appendChild(label);
-    }
-  });
-
-  async function submitEvaluation() {
+  // 📝 Submit evaluation to 'evaluations' sheet
+  document.getElementById("submitEvaluationBtn").addEventListener("click", async () => {
+    const doc = document.getElementById("documentName").value;
+    const version = document.getElementById("versionNumber").value;
     const context = document.getElementById("contextSelect").value;
     const comment = document.getElementById("commentBox").value.trim();
-    const userEmail = google.accounts.id?.get()?.email || "Unknown";
+    const user = document.getElementById("userEmail").value;
 
-    const getRating = name => {
-      const selected = document.querySelector(`input[name="${name}"]:checked`);
-      return selected ? selected.value : "";
+    const getRating = (name) => {
+      const radios = document.getElementsByName(name);
+      for (let radio of radios) {
+        if (radio.checked) return radio.value;
+      }
+      return '';
     };
 
     const relevance = getRating("relevance");
@@ -327,34 +276,42 @@
     const clarity = getRating("clarity");
     const applicability = getRating("applicability");
 
-    const docTable = document.querySelector("#tableContainer table");
-    const docRow = docTable?.rows[1];
-    const document = docRow?.cells[0]?.textContent?.trim() || "";
-    const version = docRow?.cells[4]?.textContent?.trim() || "";
-
-    if (!document || !version || !context || !userEmail || !relevance || !scope || !clarity || !applicability) {
+    if (!relevance || !scope || !clarity || !applicability || !comment) {
       alert("⚠️ Please complete all fields before submitting.");
       return;
     }
 
-    const row = [document, version, context, userEmail, relevance, scope, clarity, applicability, comment];
+    const evaluationRow = [
+      doc, version, context, user,
+      relevance, scope, clarity, applicability, comment
+    ];
 
     try {
-      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${evaluationSheet}:append?valueInputOption=USER_ENTERED`, {
-        method: "POST",
+      const appendRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations:append?valueInputOption=USER_ENTERED`, {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json"
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ values: [row] })
+        body: JSON.stringify({ values: [evaluationRow] })
       });
-      alert("✅ Evaluation submitted successfully.");
-      document.getElementById("evaluatorSection").style.display = "none";
+
+      if (!appendRes.ok) throw new Error("Failed to write to sheet");
+
+      alert("✅ Evaluation submitted successfully!");
+
+      // Clear inputs
+      document.getElementById("commentBox").value = '';
+      ["relevance", "scope", "clarity", "applicability"].forEach(name => {
+        document.querySelectorAll(`input[name="${name}"]`).forEach(el => el.checked = false);
+      });
+
     } catch (err) {
-      console.error("Error submitting evaluation:", err);
-      alert("❌ Failed to submit evaluation.");
+      console.error(err);
+      alert("❌ Error submitting evaluation.");
     }
-  }
+  });
 </script>
+
 </body>
 </html>
