@@ -146,25 +146,23 @@
   document.getElementById("authButton").addEventListener("click", () => {
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email',
-      callback: async (tokenResponse) => {
+      scope: 'https://www.googleapis.com/auth/spreadsheets openid email',
+      callback: (tokenResponse) => {
         accessToken = tokenResponse.access_token;
 
-        // Get user email
-        try {
-          const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: { Authorization: `Bearer ${accessToken}` }
-          });
-          const userData = await userRes.json();
-          userEmail = userData.email || '';
-          document.getElementById("userEmail").value = userEmail;
-          document.getElementById("userEmailDisplay").value = userEmail;
-        } catch (e) {
-          alert("❌ Failed to get user email.");
-          return;
-        }
-
-        loadSheet();
+        // Use Google Identity to get ID token (for email extraction)
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (idTokenResponse) => {
+            const idToken = idTokenResponse.credential;
+            const payload = JSON.parse(atob(idToken.split('.')[1]));
+            userEmail = payload.email || '';
+            document.getElementById("userEmail").value = userEmail;
+            document.getElementById("userEmailDisplay").value = userEmail;
+            loadSheet();
+          }
+        });
+        google.accounts.id.prompt();
       }
     });
 
@@ -195,7 +193,7 @@
     }
   }
 
-  // Toggle Evaluation Form visibility
+  // Toggle Evaluation Form
   document.getElementById("toggleEvalFormBtn").addEventListener("click", () => {
     const form = document.getElementById("evaluationForm");
     form.style.display = (form.style.display === "none") ? "block" : "none";
@@ -209,7 +207,7 @@
     const user = document.getElementById("userEmail").value;
 
     if (!documentName || !versionNumber || !user) {
-      alert("⚠️ Missing data. Please make sure you're signed in and a document is loaded.");
+      alert("⚠️ Missing data. Please sign in and ensure a document is loaded.");
       return;
     }
 
