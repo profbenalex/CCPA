@@ -121,55 +121,57 @@ function renderTable(data) {
     return;
   }
 
-  // Row 1: Standard fields
-  const standardTr = document.createElement("tr");
-  headers.forEach((headerText, colIndex) => {
-    if (!["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
-      const th = document.createElement("th");
-      th.textContent = headerText.trim();
-      standardTr.appendChild(th);
-    }
+  // Header row
+  const headerRow = document.createElement("tr");
+  headers.forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h.trim();
+    headerRow.appendChild(th);
   });
-  table.appendChild(standardTr);
+  table.appendChild(headerRow);
 
-  const dataTr = document.createElement("tr");
+  // Row 1: All cells except Intent, Assertions, Impact, Evidence
+  const row1 = document.createElement("tr");
   headers.forEach((headerText, colIndex) => {
-    if (!["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
-      const td = document.createElement("td");
-      const cleanCell = (firstRow[colIndex] || "").trim();
-
-      if (headerText === "Link" && cleanCell.startsWith("https://")) {
-        const btn = document.createElement("button");
-        btn.textContent = "🔗 Open Link";
-        btn.onclick = () => window.open(cleanCell, '_blank');
-        btn.dataset.link = cleanCell;
-        td.appendChild(btn);
-      } else {
-        td.contentEditable = "true";
-        td.textContent = cleanCell;
-      }
-
-      dataTr.appendChild(td);
-    }
-  });
-  table.appendChild(dataTr);
-
-  // Row 2: Intent, Assertions, Impact, Evidence
-  const detailTr = document.createElement("tr");
-  ["Intent", "Assertions", "Impact", "Evidence"].forEach(field => {
-    const colIndex = headers.indexOf(field);
     const td = document.createElement("td");
-    td.classList.add(field.toLowerCase());
-
     const cleanCell = (firstRow[colIndex] || "").trim();
-    const div = document.createElement("div");
-    div.contentEditable = "true";
-    div.textContent = cleanCell;
-    td.appendChild(div);
 
-    detailTr.appendChild(td);
+    if (["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+      td.textContent = ""; // Leave empty
+    } else if (headerText === "Link" && cleanCell.startsWith("https://")) {
+      const btn = document.createElement("button");
+      btn.textContent = "🔗 Open Link";
+      btn.onclick = () => window.open(cleanCell, '_blank');
+      btn.dataset.link = cleanCell;
+      td.appendChild(btn);
+    } else {
+      td.contentEditable = "true";
+      td.textContent = cleanCell;
+    }
+
+    row1.appendChild(td);
   });
-  table.appendChild(detailTr);
+  table.appendChild(row1);
+
+  // Row 2: Only Intent, Assertions, Impact, Evidence
+  const row2 = document.createElement("tr");
+  headers.forEach((headerText, colIndex) => {
+    const td = document.createElement("td");
+
+    if (["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+      td.classList.add(headerText.toLowerCase());
+      const cleanCell = (firstRow[colIndex] || "").trim();
+      const div = document.createElement("div");
+      div.contentEditable = "true";
+      div.textContent = cleanCell;
+      td.appendChild(div);
+    } else {
+      td.textContent = ""; // Leave empty
+    }
+
+    row2.appendChild(td);
+  });
+  table.appendChild(row2);
 
   container.appendChild(table);
 }
