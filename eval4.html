@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -106,96 +109,78 @@
     let categoryHeaders = [];
     let categoryDataByHeader = {};
 
-    function renderEvaluationForm(documentName, userEmail) {
-      const formContainer = document.createElement("div");
-      formContainer.style.margin = "2em";
-      formContainer.innerHTML = `
-        <h2 style="text-align:center;">📄 Document Evaluation Form</h2>
-        <table style="margin:auto; max-width:600px;">
-          <tr><th>Document</th><td>${documentName || 'Not available'}</td></tr>
-          <tr><th>User</th><td>${userEmail || 'Not signed in'}</td></tr>
-          <tr><th>Evaluation Notes</th>
-              <td><textarea rows="6" style="width:100%; font-size:14px;" placeholder="Enter evaluation notes here..."></textarea></td>
-          </tr>
-        </table>
-      `;
-      document.body.appendChild(formContainer);
+function renderTable(data) {
+  const container = document.getElementById("tableContainer");
+  container.innerHTML = "";
+
+  const headers = data[0];
+  const firstRow = data[1];
+  if (!firstRow) return;
+
+  const table1Fields = ["Domain", "Theme", "Document", "Type", "Version", "Status", "Authors", "Owner", "Link"];
+  const table2Fields = ["Intent", "Assertions", "Impact", "Evidence"];
+
+  // Table 1
+  const table1 = document.createElement("table");
+
+  const headerRow1 = document.createElement("tr");
+  table1Fields.forEach(field => {
+    const th = document.createElement("th");
+    th.textContent = field;
+    headerRow1.appendChild(th);
+  });
+  table1.appendChild(headerRow1);
+
+  const row1 = document.createElement("tr");
+  table1Fields.forEach(field => {
+    const colIndex = headers.indexOf(field);
+    const td = document.createElement("td");
+    const cleanCell = (firstRow[colIndex] || "").trim();
+
+    if (field === "Link" && cleanCell.startsWith("https://")) {
+      const btn = document.createElement("button");
+      btn.textContent = "🔗 Open Link";
+      btn.onclick = () => window.open(cleanCell, '_blank');
+      btn.dataset.link = cleanCell;
+      td.appendChild(btn);
+    } else {
+      td.contentEditable = "true";
+      td.textContent = cleanCell;
     }
 
-    function renderTable(data) {
-      const container = document.getElementById("tableContainer");
-      container.innerHTML = "";
+    row1.appendChild(td);
+  });
+  table1.appendChild(row1);
+  container.appendChild(table1);
 
-      const headers = data[0];
-      const firstRow = data[1];
-      if (!firstRow) return;
+  // Table 2
+  const table2 = document.createElement("table");
 
-      const table1Fields = ["Domain", "Theme", "Document", "Type", "Version", "Status", "Authors", "Owner", "Link"];
-      const table2Fields = ["Intent", "Assertions", "Impact", "Evidence"];
+  const headerRow2 = document.createElement("tr");
+  table2Fields.forEach(field => {
+    const th = document.createElement("th");
+    th.textContent = field;
+    headerRow2.appendChild(th);
+  });
+  table2.appendChild(headerRow2);
 
-      // Table 1
-      const table1 = document.createElement("table");
-      const headerRow1 = document.createElement("tr");
-      table1Fields.forEach(field => {
-        const th = document.createElement("th");
-        th.textContent = field;
-        headerRow1.appendChild(th);
-      });
-      table1.appendChild(headerRow1);
-
-      const row1 = document.createElement("tr");
-      table1Fields.forEach(field => {
-        const colIndex = headers.indexOf(field);
-        const td = document.createElement("td");
-        const cleanCell = (firstRow[colIndex] || "").trim();
-        if (field === "Link" && cleanCell.startsWith("https://")) {
-          const btn = document.createElement("button");
-          btn.textContent = "🔗 Open Link";
-          btn.onclick = () => window.open(cleanCell, '_blank');
-          btn.dataset.link = cleanCell;
-          td.appendChild(btn);
-        } else {
-          td.contentEditable = "true";
-          td.textContent = cleanCell;
-        }
-        row1.appendChild(td);
-      });
-      table1.appendChild(row1);
-      container.appendChild(table1);
-
-      // Table 2
-      const table2 = document.createElement("table");
-      const headerRow2 = document.createElement("tr");
-      table2Fields.forEach(field => {
-        const th = document.createElement("th");
-        th.textContent = field;
-        headerRow2.appendChild(th);
-      });
-      table2.appendChild(headerRow2);
-
-      const row2 = document.createElement("tr");
-      table2Fields.forEach(field => {
-        const colIndex = headers.indexOf(field);
-        const td = document.createElement("td");
-        td.classList.add(field.toLowerCase());
-        const cleanCell = (firstRow[colIndex] || "").trim();
-        const div = document.createElement("div");
-        div.contentEditable = "true";
-        div.textContent = cleanCell;
-        td.appendChild(div);
-        row2.appendChild(td);
-      });
-      table2.appendChild(row2);
-      container.appendChild(table2);
-
-      const docIndex = headers.indexOf("Document");
-      const documentName = (firstRow[docIndex] || "").trim();
-
-      setTimeout(() => {
-        const email = window.userEmail || '';
-        renderEvaluationForm(documentName, email);
-      }, 200);
-    }
+  const row2 = document.createElement("tr");
+  table2Fields.forEach(field => {
+    const colIndex = headers.indexOf(field);
+    const td = document.createElement("td");
+    td.classList.add(field.toLowerCase());
+    const cleanCell = (firstRow[colIndex] || "").trim();
+    const div = document.createElement("div");
+    div.contentEditable = "true";
+    div.textContent = cleanCell;
+    td.appendChild(div);
+    row2.appendChild(td);
+  });
+  table2.appendChild(row2);
+  container.appendChild(table2);
+  // Update Document Evaluation section
+  document.getElementById("evalDocument").textContent = firstRow[headers.indexOf("Document")] || "—";
+}
 
     function setupFilters(data) {
       const domainSelect = document.getElementById("filterDomain");
@@ -208,7 +193,40 @@
       const documentIndex = headers.indexOf("Document");
       const rows = data.slice(1);
 
-      const domains           = t;
+      const domains = [...new Set(rows.map(r => r[domainIndex]).filter(Boolean))];
+      domains.sort().forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = d;
+        domainSelect.appendChild(opt);
+      });
+
+      function updateThemes(domain) {
+        themeSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        themeSelect.disabled = true;
+        if (!domain) return;
+
+        const themes = [...new Set(rows.filter(r => r[domainIndex] === domain).map(r => r[themeIndex]).filter(Boolean))];
+        themes.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          themeSelect.appendChild(opt);
+        });
+        themeSelect.disabled = false;
+      }
+
+      function updateDocuments(domain, theme) {
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        if (!domain || !theme) return;
+
+        const documents = [...new Set(rows.filter(r =>
+          r[domainIndex] === domain && r[themeIndex] === theme
+        ).map(r => r[documentIndex]).filter(Boolean))];
+        documents.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
           documentSelect.appendChild(opt);
         });
         documentSelect.disabled = false;
@@ -241,21 +259,17 @@
     document.getElementById("authButton").addEventListener("click", () => {
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email',
-        callback: async (tokenResponse) => {
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: async tokenResponse => {
+  accessToken = tokenResponse.access_token;
+
+  // Get user email
+  const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }).then(r => r.json());
+
+  document.getElementById("evalUser").textContent = userInfo.email || "—";
           accessToken = tokenResponse.access_token;
-
-          try {
-            const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            const userInfo = await userRes.json();
-            window.userEmail = userInfo.email;
-          } catch (err) {
-            console.error("Failed to retrieve user email:", err);
-            window.userEmail = '';
-          }
-
           loadSheet();
         }
       });
@@ -274,9 +288,15 @@
         renderTable(allData);
       } catch (err) {
         console.error("Error loading sheet:", err);
-        alert("⚠️ Failed to load data.");
+        alert("\u26a0\ufe0f Failed to load data.");
       }
     }
   </script>
+
+<div id="evaluationSection" style="margin: 2em; padding: 1em; border: 1px solid #ccc; background-color: #f9f9f9;">
+  <h2>Document Evaluation</h2>
+  <p><strong>Document:</strong> <span id="evalDocument">—</span></p>
+  <p><strong>User:</strong> <span id="evalUser">—</span></p>
+</div>
 </body>
 </html>
