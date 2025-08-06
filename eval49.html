@@ -1,0 +1,494 @@
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BCQAdmin</title>
+  <script src="https://accounts.google.com/gsi/client" async defer>
+function toggleEvaluation() {
+  const section = document.getElementById("evaluationSection");
+  section.style.display = section.style.display === "none" ? "block" : "none";
+}
+
+
+async function submitEvaluation() {
+  const doc = document.getElementById("evalDocument").textContent.trim();
+  const version = document.getElementById("evalVersion").textContent.trim();
+  const user = document.getElementById("evalUser").textContent.trim();
+  const context = document.getElementById("evalContext").value;
+  const relevance = document.querySelector('input[name="relevance"]:checked')?.value;
+
+  if (!doc || doc === "—") {
+    alert("⚠️ Document is missing.");
+    return;
+  }
+  if (!version || version === "—") {
+    alert("⚠️ Version is missing.");
+    return;
+  }
+  if (!context) {
+    alert("⚠️ Please select a Context.");
+    return;
+  }
+  if (!relevance) {
+    alert("⚠️ Please select a Relevance option.");
+    return;
+  }
+
+  const body = {
+    values: [[doc, version, context, user, relevance]]
+  };
+
+  try {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations:append?valueInputOption=RAW`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    alert("✅ Evaluation submitted!");
+  } catch (err) {
+    console.error("Submit error:", err);
+    alert("❌ Failed to submit evaluation.");
+  }
+}
+
+
+async function populateContextOptions() {
+  try {
+    const contextRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const contextData = await contextRes.json();
+    const values = contextData.values || [];
+    const contextOptions = [...new Set(values.slice(1).map(row => row[9]).filter(Boolean))].sort();
+    const dropdown = document.getElementById("evalContext");
+    dropdown.innerHTML = '<option value="">Select Context</option>';
+    contextOptions.forEach(opt => {
+      const o = document.createElement("option");
+      o.value = o.textContent = opt;
+      dropdown.appendChild(o);
+    });
+  } catch (err) {
+    console.error("Failed to load context options:", err);
+  }
+}
+
+</script>
+  <style>
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+    }
+    img.logo {
+      float: left;
+      max-height: 100px;
+      margin: 1em;
+    }
+    h1 {
+      text-align: center;
+      background-color: #e3e3e3;
+      margin: 0;
+      padding: 0.75em 0;
+      font-size: 28px;
+      font-weight: bold;
+      clear: both;
+    }
+    button, select {
+      font-size: 16px;
+      padding: 6px 12px;
+      margin: 0.5em 0.5em 0.5em 0;
+      height: 36px;
+      min-width: 120px;
+      box-sizing: border-box;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 0.5em;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background-color: #eee;
+    }
+    td[contenteditable="true"] {
+      background-color: #ffffcc;
+    }
+    select:disabled {
+      background-color: #eee;
+      color: #999;
+    }
+    #tableContainer {
+      overflow-x: auto;
+      margin: 1em;
+    }
+    td.intent, td.assertions, td.impact, td.evidence {
+      padding: 0;
+      vertical-align: top;
+    }
+    td.intent div, td.assertions div, td.impact div, td.evidence div {
+      white-space: normal !important;
+      width: 50ch;
+      max-width: 50ch;
+      height: 144px;
+      max-height: 144px;
+      line-height: 1.5;
+      overflow-y: auto;
+      overflow-wrap: break-word;
+      box-sizing: border-box;
+      padding: 0.5em;
+      background-color: #ffffcc;
+    }
+  </style>
+</head>
+<body>
+  <img src="bcquality.jpeg" alt="BC Quality Logo" class="logo">
+  <h1>Belgium Campus Quality Repository V1.0</h1>
+
+  <div style="text-align:center; clear:both;">
+    <button id="authButton">🔐 Sign in with Google</button>
+  </div>
+
+  <div id="filtersSection" style="display: none; margin: 1em auto; max-width: 1000px; display: flex; gap: 2em; justify-content: center; align-items: center; flex-wrap: wrap;">
+    <label for="filterDomain">Domain:</label>
+    <select id="filterDomain"><option value="">All</option></select>
+  </div>
+
+
+    <label for="filterTheme">Theme:</label>
+    <select id="filterTheme" disabled><option value="">All</option></select>
+
+    <label for="filterDocument">Document:</label>
+    <select id="filterDocument" disabled><option value="">All</option></select>
+  </div>
+
+  <div id="tableContainer" style="display:none;"></div>
+
+  <script>
+    const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
+    const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
+    const sheetName = 'documents';
+    let accessToken = '';
+    let categoryHeaders = [];
+    let categoryDataByHeader = {};
+
+function renderTable(data) {
+  const container = document.getElementById("tableContainer");
+  container.innerHTML = "";
+  document.getElementById("tableContainer").style.display = "block";
+  document.getElementById("evalToggleButton").style.display = "inline-block";
+  document.getElementById("evalSubmitButton").style.display = "inline-block";
+
+  const headers = data[0];
+  const firstRow = data[1];
+  if (!firstRow) return;
+
+  const table1Fields = ["Domain", "Theme", "Document", "Type", "Version", "Status", "Authors", "Owner", "Link"];
+  const table2Fields = ["Intent", "Assertions", "Impact", "Evidence"];
+
+  // Table 1
+  const table1 = document.createElement("table");
+
+  const headerRow1 = document.createElement("tr");
+  table1Fields.forEach(field => {
+    const th = document.createElement("th");
+    th.textContent = field;
+    headerRow1.appendChild(th);
+  });
+  table1.appendChild(headerRow1);
+
+  const row1 = document.createElement("tr");
+  table1Fields.forEach(field => {
+    const colIndex = headers.indexOf(field);
+    const td = document.createElement("td");
+    const cleanCell = (firstRow[colIndex] || "").trim();
+
+    if (field === "Link" && cleanCell.startsWith("https://")) {
+      const btn = document.createElement("button");
+      btn.textContent = "🔗 Open Link";
+      btn.onclick = () => window.open(cleanCell, '_blank');
+      btn.dataset.link = cleanCell;
+      td.appendChild(btn);
+    } else {
+      td.contentEditable = "true";
+      td.textContent = cleanCell;
+    }
+
+    row1.appendChild(td);
+  });
+  table1.appendChild(row1);
+  container.appendChild(table1);
+
+  // Table 2
+  const table2 = document.createElement("table");
+
+  const headerRow2 = document.createElement("tr");
+  table2Fields.forEach(field => {
+    const th = document.createElement("th");
+    th.textContent = field;
+    headerRow2.appendChild(th);
+  });
+  table2.appendChild(headerRow2);
+
+  const row2 = document.createElement("tr");
+  table2Fields.forEach(field => {
+    const colIndex = headers.indexOf(field);
+    const td = document.createElement("td");
+    td.classList.add(field.toLowerCase());
+    const cleanCell = (firstRow[colIndex] || "").trim();
+    const div = document.createElement("div");
+    div.contentEditable = "true";
+    div.textContent = cleanCell;
+    td.appendChild(div);
+    row2.appendChild(td);
+  });
+  table2.appendChild(row2);
+  container.appendChild(table2);
+  // Update Document Evaluation section
+  const docIndex = headers.indexOf("Document");
+  if (docIndex !== -1) {
+    document.getElementById("evalDocument").textContent = firstRow[docIndex] || "—";
+  }
+}
+
+    function setupFilters(data) {
+      const domainSelect = document.getElementById("filterDomain");
+      const themeSelect = document.getElementById("filterTheme");
+      const documentSelect = document.getElementById("filterDocument");
+
+      const headers = data[0];
+      const domainIndex = headers.indexOf("Domain");
+      const themeIndex = headers.indexOf("Theme");
+      const documentIndex = headers.indexOf("Document");
+      const rows = data.slice(1);
+
+      const domains = [...new Set(rows.map(r => r[domainIndex]).filter(Boolean))];
+      domains.sort().forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = d;
+        domainSelect.appendChild(opt);
+      });
+
+      function updateThemes(domain) {
+        themeSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        themeSelect.disabled = true;
+        if (!domain) return;
+
+        const themes = [...new Set(rows.filter(r => r[domainIndex] === domain).map(r => r[themeIndex]).filter(Boolean))];
+        themes.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          themeSelect.appendChild(opt);
+        });
+        themeSelect.disabled = false;
+      }
+
+      function updateDocuments(domain, theme) {
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        if (!domain || !theme) return;
+
+        const documents = [...new Set(rows.filter(r =>
+          r[domainIndex] === domain && r[themeIndex] === theme
+        ).map(r => r[documentIndex]).filter(Boolean))];
+        documents.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          documentSelect.appendChild(opt);
+        });
+        documentSelect.disabled = false;
+      }
+
+      function filterData() {
+        const domain = domainSelect.value;
+        const theme = themeSelect.value;
+        const document = documentSelect.value;
+        const filtered = [headers, ...rows.filter(row => {
+          if (domain && row[domainIndex] !== domain) return false;
+          if (theme && row[themeIndex] !== theme) return false;
+          if (document && row[documentIndex] !== document) return false;
+          return true;
+        })];
+        renderTable(filtered);
+      }
+
+      domainSelect.addEventListener("change", () => {
+        updateThemes(domainSelect.value);
+        filterData();
+      });
+      themeSelect.addEventListener("change", () => {
+        updateDocuments(domainSelect.value, themeSelect.value);
+        filterData();
+      });
+      documentSelect.addEventListener("change", filterData);
+    }
+
+    document.getElementById("authButton").addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: async tokenResponse => {
+  accessToken = tokenResponse.access_token;
+
+  // Get user email
+  const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  }).then(r => r.json());
+
+  document.getElementById("evalUser").textContent = userInfo.email || "—";
+
+  document.getElementById("filtersSection").style.display = "block";
+
+  loadSheet();
+  populateContextOptions();
+          accessToken = tokenResponse.access_token;
+          loadSheet();
+  populateContextOptions();
+        }
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    async function loadSheet() {
+      try {
+        const docRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const docData = await docRes.json();
+        const allData = docData.values || [];
+
+        setupFilters(allData);
+        renderTable(allData);
+      } catch (err) {
+        console.error("Error loading sheet:", err);
+        alert("\u26a0\ufe0f Failed to load data.");
+      }
+    }
+  
+function toggleEvaluation() {
+  const section = document.getElementById("evaluationSection");
+  section.style.display = section.style.display === "none" ? "block" : "none";
+}
+
+
+async function submitEvaluation() {
+  const doc = document.getElementById("evalDocument").textContent.trim();
+  const version = document.getElementById("evalVersion").textContent.trim();
+  const user = document.getElementById("evalUser").textContent.trim();
+  const context = document.getElementById("evalContext").value;
+  const relevance = document.querySelector('input[name="relevance"]:checked')?.value;
+
+  if (!doc || doc === "—") {
+    alert("⚠️ Document is missing.");
+    return;
+  }
+  if (!version || version === "—") {
+    alert("⚠️ Version is missing.");
+    return;
+  }
+  if (!context) {
+    alert("⚠️ Please select a Context.");
+    return;
+  }
+  if (!relevance) {
+    alert("⚠️ Please select a Relevance option.");
+    return;
+  }
+
+  const body = {
+    values: [[doc, version, context, user, relevance]]
+  };
+
+  try {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations:append?valueInputOption=RAW`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    alert("✅ Evaluation submitted!");
+  } catch (err) {
+    console.error("Submit error:", err);
+    alert("❌ Failed to submit evaluation.");
+  }
+}
+
+
+async function populateContextOptions() {
+  try {
+    const contextRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const contextData = await contextRes.json();
+    const values = contextData.values || [];
+    const contextOptions = [...new Set(values.slice(1).map(row => row[9]).filter(Boolean))].sort();
+    const dropdown = document.getElementById("evalContext");
+    dropdown.innerHTML = '<option value="">Select Context</option>';
+    contextOptions.forEach(opt => {
+      const o = document.createElement("option");
+      o.value = o.textContent = opt;
+      dropdown.appendChild(o);
+    });
+  } catch (err) {
+    console.error("Failed to load context options:", err);
+  }
+}
+
+</script>
+
+
+<button onclick="toggleEvaluation()" style="display:none; margin: 2em;" id="evalToggleButton">📝 Evaluation Form</button>
+<button onclick="submitEvaluation()" style="display:none; margin: 2em;" id="evalSubmitButton">📤 Submit Evaluation</button>
+
+<div id="evaluationSection" style="display:none; margin: 2em; padding: 1em; border: 1px solid #ccc; background-color: #f9f9f9;">
+  <h2>Document Evaluation</h2>
+  <p><strong>Document:</strong> <span id="evalDocument">—</span></p>
+<p><strong>Version:</strong> <span id="evalVersion">—</span></p>
+  <p><strong>User:</strong> <span id="evalUser">—</span></p>
+  <label for="evalContext"><strong>Context:</strong></label>
+  <select id="evalContext">
+    <option value="">Select Context</option>
+    <option value="Academic Policy">Academic Policy</option>
+    <option value="Assessment">Assessment</option>
+    <option value="Research">Research</option>
+    <option value="Administration">Administration</option>
+    <option value="Support Services">Support Services</option>
+    <option value="Infrastructure">Infrastructure</option>
+    <option value="Quality Assurance">Quality Assurance</option>
+    <option value="Teaching and Learning">Teaching and Learning</option>
+    <option value="Community Engagement">Community Engagement</option>
+    <option value="Other">Other</option>
+  </select>
+
+
+  <p><strong>Relevance:</strong></p>
+  <div id="relevanceOptions">
+    <label><input type="radio" name="relevance" value="SD"> Strongly Disagree</label><br>
+    <label><input type="radio" name="relevance" value="D"> Disagree</label><br>
+    <label><input type="radio" name="relevance" value="N"> Neutral</label><br>
+    <label><input type="radio" name="relevance" value="A"> Agree</label><br>
+    <label><input type="radio" name="relevance" value="SA"> Strongly Agree</label>
+  </div>
+
+</div>
+</body>
+</html>
