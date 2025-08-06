@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,21 +19,13 @@ async function submitEvaluation() {
   const user = document.getElementById("evalUser").textContent;
   const context = document.getElementById("evalContext").value;
 
-  // Get Version from the table cell
-  const versionCell = Array.from(document.querySelectorAll("table tr:nth-of-type(2) td"))
-    .find(td => td.previousElementSibling?.textContent === "Version");
-  const version = versionCell ? versionCell.textContent.trim() : "";
-
-  // Get selected relevance
-  const relevance = document.querySelector('input[name="relevance"]:checked')?.value;
-
-  if (!doc || !user || doc === "—" || user === "—" || !context || !version || !relevance) {
-    alert("⚠️ Please ensure Document, Version, Context, and Relevance are provided.");
+  if (!doc || !user || doc === "—" || user === "—" || !context) {
+    alert("⚠️ Please ensure Document, User, and Context are all provided.");
     return;
   }
 
   const body = {
-    values: [[doc, version, context, user, relevance]]
+    values: [[doc, user, context]]
   };
 
   try {
@@ -159,15 +152,6 @@ async function populateContextOptions() {
   <div style="text-align:center; margin-top:1em; display:none;" id="filtersSection">
     <label for="filterDomain">Domain:</label>
     <select id="filterDomain"><option value="">All</option></select>
-  <p><strong>Relevance:</strong></p>
-  <div id="relevanceOptions">
-    <label><input type="radio" name="relevance" value="SD"> Strongly Disagree</label><br>
-    <label><input type="radio" name="relevance" value="D"> Disagree</label><br>
-    <label><input type="radio" name="relevance" value="N"> Neutral</label><br>
-    <label><input type="radio" name="relevance" value="A"> Agree</label><br>
-    <label><input type="radio" name="relevance" value="SA"> Strongly Agree</label>
-  </div>
-
 
     <label for="filterTheme">Theme:</label>
     <select id="filterTheme" disabled><option value="">All</option></select>
@@ -178,92 +162,97 @@ async function populateContextOptions() {
 
   <div id="tableContainer" style="display:none;"></div>
 
-  <script>
-    const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
-    const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
-    const sheetName = 'documents';
-    let accessToken = '';
-    let categoryHeaders = [];
-    let categoryDataByHeader = {};
+<script>
+  const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
+  const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
+  const sheetName = 'documents';
+  let accessToken = '';
+  let categoryHeaders = [];
+  let categoryDataByHeader = {};
 
-function renderTable(data) {
-  const container = document.getElementById("tableContainer");
-  container.innerHTML = "";
-  document.getElementById("tableContainer").style.display = "block";
-  document.getElementById("evalToggleButton").style.display = "inline-block";
-  document.getElementById("evalSubmitButton").style.display = "inline-block";
+  function renderTable(data) {
+    const container = document.getElementById("tableContainer");
+    container.innerHTML = "";
+    document.getElementById("tableContainer").style.display = "block";
+    document.getElementById("evalToggleButton").style.display = "inline-block";
+    document.getElementById("evalSubmitButton").style.display = "inline-block";
 
-  const headers = data[0];
-  const firstRow = data[1];
-  if (!firstRow) return;
+    const headers = data[0];
+    const firstRow = data[1];
+    if (!firstRow) return;
 
-  const table1Fields = ["Domain", "Theme", "Document", "Type", "Version", "Status", "Authors", "Owner", "Link"];
-  const table2Fields = ["Intent", "Assertions", "Impact", "Evidence"];
+    const table1Fields = ["Domain", "Theme", "Document", "Type", "Version", "Status", "Authors", "Owner", "Link"];
+    const table2Fields = ["Intent", "Assertions", "Impact", "Evidence"];
 
-  // Table 1
-  const table1 = document.createElement("table");
+    // Table 1
+    const table1 = document.createElement("table");
 
-  const headerRow1 = document.createElement("tr");
-  table1Fields.forEach(field => {
-    const th = document.createElement("th");
-    th.textContent = field;
-    headerRow1.appendChild(th);
-  });
-  table1.appendChild(headerRow1);
+    const headerRow1 = document.createElement("tr");
+    table1Fields.forEach(field => {
+      const th = document.createElement("th");
+      th.textContent = field;
+      headerRow1.appendChild(th);
+    });
+    table1.appendChild(headerRow1);
 
-  const row1 = document.createElement("tr");
-  table1Fields.forEach(field => {
-    const colIndex = headers.indexOf(field);
-    const td = document.createElement("td");
-    const cleanCell = (firstRow[colIndex] || "").trim();
+    const row1 = document.createElement("tr");
+    table1Fields.forEach(field => {
+      const colIndex = headers.indexOf(field);
+      const td = document.createElement("td");
+      const cleanCell = (firstRow[colIndex] || "").trim();
 
-    if (field === "Link" && cleanCell.startsWith("https://")) {
-      const btn = document.createElement("button");
-      btn.textContent = "🔗 Open Link";
-      btn.onclick = () => window.open(cleanCell, '_blank');
-      btn.dataset.link = cleanCell;
-      td.appendChild(btn);
-    } else {
-      td.contentEditable = "true";
-      td.textContent = cleanCell;
+      if (field === "Link" && cleanCell.startsWith("https://")) {
+        const btn = document.createElement("button");
+        btn.textContent = "🔗 Open Link";
+        btn.onclick = () => window.open(cleanCell, '_blank');
+        btn.dataset.link = cleanCell;
+        td.appendChild(btn);
+      } else {
+        td.contentEditable = "true";
+        td.textContent = cleanCell;
+      }
+
+      row1.appendChild(td);
+    });
+    table1.appendChild(row1);
+    container.appendChild(table1);
+
+    // Table 2
+    const table2 = document.createElement("table");
+
+    const headerRow2 = document.createElement("tr");
+    table2Fields.forEach(field => {
+      const th = document.createElement("th");
+      th.textContent = field;
+      headerRow2.appendChild(th);
+    });
+    table2.appendChild(headerRow2);
+
+    const row2 = document.createElement("tr");
+    table2Fields.forEach(field => {
+      const colIndex = headers.indexOf(field);
+      const td = document.createElement("td");
+      td.classList.add(field.toLowerCase());
+      const cleanCell = (firstRow[colIndex] || "").trim();
+      const div = document.createElement("div");
+      div.contentEditable = "true";
+      div.textContent = cleanCell;
+      td.appendChild(div);
+      row2.appendChild(td);
+    });
+    table2.appendChild(row2);
+    container.appendChild(table2);
+
+    // Update Document and Version in Evaluation section
+    const docIndex = headers.indexOf("Document");
+    if (docIndex !== -1) {
+      document.getElementById("evalDocument").textContent = firstRow[docIndex] || "—";
     }
-
-    row1.appendChild(td);
-  });
-  table1.appendChild(row1);
-  container.appendChild(table1);
-
-  // Table 2
-  const table2 = document.createElement("table");
-
-  const headerRow2 = document.createElement("tr");
-  table2Fields.forEach(field => {
-    const th = document.createElement("th");
-    th.textContent = field;
-    headerRow2.appendChild(th);
-  });
-  table2.appendChild(headerRow2);
-
-  const row2 = document.createElement("tr");
-  table2Fields.forEach(field => {
-    const colIndex = headers.indexOf(field);
-    const td = document.createElement("td");
-    td.classList.add(field.toLowerCase());
-    const cleanCell = (firstRow[colIndex] || "").trim();
-    const div = document.createElement("div");
-    div.contentEditable = "true";
-    div.textContent = cleanCell;
-    td.appendChild(div);
-    row2.appendChild(td);
-  });
-  table2.appendChild(row2);
-  container.appendChild(table2);
-  // Update Document Evaluation section
-  const docIndex = headers.indexOf("Document");
-  if (docIndex !== -1) {
-    document.getElementById("evalDocument").textContent = firstRow[docIndex] || "—";
+    const versionIndex = headers.indexOf("Version");
+    if (versionIndex !== -1) {
+      document.getElementById("evalVersion").textContent = firstRow[versionIndex] || "—";
+    }
   }
-}
 
     function setupFilters(data) {
       const domainSelect = document.getElementById("filterDomain");
@@ -392,21 +381,13 @@ async function submitEvaluation() {
   const user = document.getElementById("evalUser").textContent;
   const context = document.getElementById("evalContext").value;
 
-  // Get Version from the table cell
-  const versionCell = Array.from(document.querySelectorAll("table tr:nth-of-type(2) td"))
-    .find(td => td.previousElementSibling?.textContent === "Version");
-  const version = versionCell ? versionCell.textContent.trim() : "";
-
-  // Get selected relevance
-  const relevance = document.querySelector('input[name="relevance"]:checked')?.value;
-
-  if (!doc || !user || doc === "—" || user === "—" || !context || !version || !relevance) {
-    alert("⚠️ Please ensure Document, Version, Context, and Relevance are provided.");
+  if (!doc || !user || doc === "—" || user === "—" || !context) {
+    alert("⚠️ Please ensure Document, User, and Context are all provided.");
     return;
   }
 
   const body = {
-    values: [[doc, version, context, user, relevance]]
+    values: [[doc, user, context]]
   };
 
   try {
@@ -457,7 +438,9 @@ async function populateContextOptions() {
 <div id="evaluationSection" style="display:none; margin: 2em; padding: 1em; border: 1px solid #ccc; background-color: #f9f9f9;">
   <h2>Document Evaluation</h2>
   <p><strong>Document:</strong> <span id="evalDocument">—</span></p>
+  <p><strong>Version:</strong> <span id="evalVersion">—</span></p> <!-- ✅ ADDED -->
   <p><strong>User:</strong> <span id="evalUser">—</span></p>
+
   <label for="evalContext"><strong>Context:</strong></label>
   <select id="evalContext">
     <option value="">Select Context</option>
@@ -472,7 +455,6 @@ async function populateContextOptions() {
     <option value="Community Engagement">Community Engagement</option>
     <option value="Other">Other</option>
   </select>
-
 </div>
 </body>
 </html>
