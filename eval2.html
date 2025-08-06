@@ -1,126 +1,264 @@
+
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Filtered Table</title>
+  <meta charset="UTF-8">
+  <title>BCQAdmin</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    table, th, td {
-      border: 1px solid black;
-      border-collapse: collapse;
-      padding: 8px;
+    body {
+      font-family: Calibri, Arial, sans-serif;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
     }
-    select {
-      margin: 5px;
+    img.logo {
+      float: left;
+      max-height: 100px;
+      margin: 1em;
+    }
+    h1 {
+      text-align: center;
+      background-color: #e3e3e3;
+      margin: 0;
+      padding: 0.75em 0;
+      font-size: 28px;
+      font-weight: bold;
+      clear: both;
+    }
+    button, select {
+      font-size: 16px;
+      padding: 6px 12px;
+      margin: 0.5em 0.5em 0.5em 0;
+      height: 36px;
+      min-width: 120px;
+      box-sizing: border-box;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 0.5em;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      background-color: #eee;
+    }
+    td[contenteditable="true"] {
+      background-color: #ffffcc;
+    }
+    select:disabled {
+      background-color: #eee;
+      color: #999;
+    }
+    #tableContainer {
+      overflow-x: auto;
+      margin: 1em;
+    }
+    td.intent, td.assertions, td.impact, td.evidence {
+      padding: 0;
+      vertical-align: top;
+    }
+    td.intent div, td.assertions div, td.impact div, td.evidence div {
+      white-space: normal !important;
+      width: 50ch;
+      max-width: 50ch;
+      height: 144px;
+      max-height: 144px;
+      line-height: 1.5;
+      overflow-y: auto;
+      overflow-wrap: break-word;
+      box-sizing: border-box;
+      padding: 0.5em;
+      background-color: #ffffcc;
     }
   </style>
 </head>
 <body>
-  <h2>Document Filter</h2>
-  <label for="domainSelect">Domain:</label>
-  <select id="domainSelect"></select>
+  <img src="bcquality.jpeg" alt="BC Quality Logo" class="logo">
+  <h1>Belgium Campus Quality Repository V1.0</h1>
 
-  <label for="themeSelect">Theme:</label>
-  <select id="themeSelect"></select>
+  <div style="text-align:center; clear:both;">
+    <button id="authButton">🔐 Sign in with Google</button>
+  </div>
 
-  <label for="documentSelect">Document:</label>
-  <select id="documentSelect"></select>
+  <div style="text-align:center; margin-top:1em;">
+    <label for="filterDomain">Domain:</label>
+    <select id="filterDomain"><option value="">All</option></select>
 
-  <table id="dataTable"></table>
+    <label for="filterTheme">Theme:</label>
+    <select id="filterTheme" disabled><option value="">All</option></select>
 
+    <label for="filterDocument">Document:</label>
+    <select id="filterDocument" disabled><option value="">All</option></select>
+  </div>
 
+  <div id="tableContainer"></div>
 
-<script>
-  const headers = ["Domain", "Theme", "Document", "Content"];
-  const rows = [
-    ["Education", "Curriculum", "Policy A", "Details of Policy A"],
-    ["Education", "Assessment", "Policy B", "Details of Policy B"],
-    ["Health", "Nutrition", "Policy C", "Details of Policy C"],
-    ["Health", "Mental Health", "Policy D", "Details of Policy D"],
-    ["Enterprise", "Innovation", "Policy E", "Details of Policy E"]
-  ];
+  <script>
+    const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
+    const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
+    const sheetName = 'documents';
+    let accessToken = '';
+    let categoryHeaders = [];
+    let categoryDataByHeader = {};
 
-  const domainIndex = 0;
-  const themeIndex = 1;
-  const documentIndex = 2;
+    function renderTable(data) {
+      const container = document.getElementById("tableContainer");
+      container.innerHTML = "";
+      const table = document.createElement("table");
 
-  const domainSelect = document.getElementById("domainSelect");
-  const themeSelect = document.getElementById("themeSelect");
-  const documentSelect = document.getElementById("documentSelect");
-  const dataTable = document.getElementById("dataTable");
-
-  function renderTable(data) {
-    dataTable.innerHTML = "";
-    data.forEach(row => {
-      const tr = document.createElement("tr");
-      row.forEach(cell => {
-        const td = document.createElement(data.indexOf(row) === 0 ? "th" : "td");
-        td.textContent = cell;
-        tr.appendChild(td);
+      const headerRow = document.createElement("tr");
+      data[0].forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = h.trim();
+        headerRow.appendChild(th);
       });
-      dataTable.appendChild(tr);
+      table.appendChild(headerRow);
+
+      data.slice(1).forEach(rowData => {
+        const tr = document.createElement("tr");
+        rowData.forEach((cell, colIndex) => {
+          const td = document.createElement("td");
+          const headerText = data[0][colIndex]?.trim();
+          const cleanCell = (cell || "").trim();
+
+          if (headerText === "Intent") td.classList.add("intent");
+          if (headerText === "Assertions") td.classList.add("assertions");
+          if (headerText === "Impact") td.classList.add("impact");
+          if (headerText === "Evidence") td.classList.add("evidence");
+
+          if (headerText === "Link" && cleanCell.startsWith("https://")) {
+            const btn = document.createElement("button");
+            btn.textContent = "🔗 Open Link";
+            btn.onclick = () => window.open(cleanCell, '_blank');
+            btn.dataset.link = cleanCell;
+            td.appendChild(btn);
+          } else {
+            if (["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+              const div = document.createElement("div");
+              div.contentEditable = "true";
+              div.textContent = cleanCell;
+              td.appendChild(div);
+            } else {
+              td.contentEditable = "true";
+              td.textContent = cleanCell;
+            }
+          }
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+
+      container.appendChild(table);
+    }
+
+    function setupFilters(data) {
+      const domainSelect = document.getElementById("filterDomain");
+      const themeSelect = document.getElementById("filterTheme");
+      const documentSelect = document.getElementById("filterDocument");
+
+      const headers = data[0];
+      const domainIndex = headers.indexOf("Domain");
+      const themeIndex = headers.indexOf("Theme");
+      const documentIndex = headers.indexOf("Document");
+      const rows = data.slice(1);
+
+      const domains = [...new Set(rows.map(r => r[domainIndex]).filter(Boolean))];
+      domains.sort().forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = d;
+        domainSelect.appendChild(opt);
+      });
+
+      function updateThemes(domain) {
+        themeSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        themeSelect.disabled = true;
+        if (!domain) return;
+
+        const themes = [...new Set(rows.filter(r => r[domainIndex] === domain).map(r => r[themeIndex]).filter(Boolean))];
+        themes.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          themeSelect.appendChild(opt);
+        });
+        themeSelect.disabled = false;
+      }
+
+      function updateDocuments(domain, theme) {
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        if (!domain || !theme) return;
+
+        const documents = [...new Set(rows.filter(r =>
+          r[domainIndex] === domain && r[themeIndex] === theme
+        ).map(r => r[documentIndex]).filter(Boolean))];
+        documents.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          documentSelect.appendChild(opt);
+        });
+        documentSelect.disabled = false;
+      }
+
+function filterData() {
+  const domain = domainSelect.value;
+  const theme = themeSelect.value;
+  const document = documentSelect.value;
+  const filtered = [headers, ...rows.filter(row => {
+    if (domain && row[domainIndex] !== domain) return false;
+    if (theme && row[themeIndex] !== theme) return false;
+    if (document && row[documentIndex] !== document) return false;
+    return true;
+  }).slice(0, 1)];
+  renderTable(filtered);
+}
+
+      domainSelect.addEventListener("change", () => {
+        updateThemes(domainSelect.value);
+        filterData();
+      });
+      themeSelect.addEventListener("change", () => {
+        updateDocuments(domainSelect.value, themeSelect.value);
+        filterData();
+      });
+      documentSelect.addEventListener("change", filterData);
+    }
+
+    document.getElementById("authButton").addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: tokenResponse => {
+          accessToken = tokenResponse.access_token;
+          loadSheet();
+        }
+      });
+      tokenClient.requestAccessToken();
     });
-  }
 
-  function populateSelect(select, values) {
-    select.innerHTML = "<option value=''>-- All --</option>";
-    [...new Set(values)].forEach(value => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      select.appendChild(option);
-    });
-  }
+    async function loadSheet() {
+      try {
+        const docRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const docData = await docRes.json();
+        const allData = docData.values || [];
 
-
-
-  function updateThemes(domain) {
-    const filtered = rows.filter(row => !domain || row[domainIndex] === domain);
-    const themes = filtered.map(row => row[themeIndex]);
-    populateSelect(themeSelect, themes);
-    updateDocuments(domain, "");
-  }
-
-  function updateDocuments(domain, theme) {
-    const filtered = rows.filter(row => {
-      if (domain && row[domainIndex] !== domain) return false;
-      if (theme && row[themeIndex] !== theme) return false;
-      return true;
-    });
-    const documents = filtered.map(row => row[documentIndex]);
-    populateSelect(documentSelect, documents);
-  }
-
-  function filterData() {
-    const domain = domainSelect.value;
-    const theme = themeSelect.value;
-    const document = documentSelect.value;
-
-    const filteredRows = rows.filter(row => {
-      if (domain && row[domainIndex] !== domain) return false;
-      if (theme && row[themeIndex] !== theme) return false;
-      if (document && row[documentIndex] !== document) return false;
-      return true;
-    });
-
-    const filtered = [headers, ...filteredRows.slice(0, 1)];
-    renderTable(filtered);
-  }
-
-  domainSelect.addEventListener("change", () => {
-    updateThemes(domainSelect.value);
-    filterData();
-  });
-  themeSelect.addEventListener("change", () => {
-    updateDocuments(domainSelect.value, themeSelect.value);
-    filterData();
-  });
-  documentSelect.addEventListener("change", filterData);
-
-  // Initial population
-  populateSelect(domainSelect, rows.map(row => row[domainIndex]));
-  updateThemes("");
-  renderTable([headers]);
-</script>
+        setupFilters(allData);
+        renderTable(allData);
+      } catch (err) {
+        console.error("Error loading sheet:", err);
+        alert("\u26a0\ufe0f Failed to load data.");
+      }
+    }
+  </script>
 </body>
 </html>
