@@ -212,15 +212,17 @@ function filterData() {
   const domain = domainSelect.value;
   const theme = themeSelect.value;
   const document = documentSelect.value;
-  const filtered = [headers, ...rows.filter(row => {
+
+  const matchingRows = rows.filter(row => {
     if (domain && row[domainIndex] !== domain) return false;
     if (theme && row[themeIndex] !== theme) return false;
     if (document && row[documentIndex] !== document) return false;
     return true;
-  }).slice(0, 1)];
+  });
+
+  const filtered = [headers, ...matchingRows.slice(0, 1)];
   renderTable(filtered);
 }
-
       domainSelect.addEventListener("change", () => {
         updateThemes(domainSelect.value);
         filterData();
