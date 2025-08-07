@@ -2,6 +2,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -54,10 +55,7 @@ async function populateContextOptions() {
     });
     const contextData = await contextRes.json();
     const values = contextData.values || [];
-
-    // 🔁 Pull from column 11 (index 10)
-    const contextOptions = [...new Set(values.slice(1).map(row => row[10]).filter(Boolean))].sort();
-
+    const contextOptions = [...new Set(values.slice(1).map(row => row[9]).filter(Boolean))].sort();
     const dropdown = document.getElementById("evalContext");
     dropdown.innerHTML = '<option value="">Select Context</option>';
     contextOptions.forEach(opt => {
@@ -379,35 +377,72 @@ function toggleEvaluation() {
 }
 
 
+  async function submitEvaluation() {
+    const doc = document.getElementById("evalDocument").textContent;
+    const version = document.getElementById("evalVersion").textContent;
+    const user = document.getElementById("evalUser").textContent;
+    const context = document.getElementById("evalContext").value;
 
-  async function populateContextOptions() {
+    const relevance = document.querySelector('input[name="evalRelevance"]:checked')?.value || "";
+    const scope = document.querySelector('input[name="evalScope"]:checked')?.value || "";
+    const clarity = document.querySelector('input[name="evalClarity"]:checked')?.value || "";
+    const applicability = document.querySelector('input[name="evalApplicability"]:checked')?.value || "";
+    const comments = document.getElementById("evalComments").value.trim();
+
+    if (!doc || !version || !user || !context) {
+      alert("⚠️ Please ensure Document, Version, User, and Context are all provided.");
+      return;
+    }
+
+const timestamp = new Date().toISOString();
+const body = {
+  values: [[doc, version, context, user, relevance, scope, clarity, applicability, comments, timestamp]]
+};
+
+
     try {
-      const contextRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations`, {
-        headers: { Authorization: `Bearer ${accessToken}` }
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations:append?valueInputOption=RAW`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
       });
-      const contextData = await contextRes.json();
-      const values = contextData.values || [];
-      const contextOptions = [...new Set(values.slice(1).map(row => row[10]).filter(Boolean))].sort();
-      const dropdown = document.getElementById("evalContext");
-      dropdown.innerHTML = '<option value="">Select Context</option>';
-      contextOptions.forEach(opt => {
-        const o = document.createElement("option");
-        o.value = o.textContent = opt;
-        dropdown.appendChild(o);
-      });
+
+      if (!res.ok) throw new Error(await res.text());
+      alert("✅ Evaluation submitted!");
     } catch (err) {
-      console.error("Failed to load context options:", err);
+      console.error("Submit error:", err);
+      alert("❌ Failed to submit evaluation.");
     }
   }
 
 async function populateContextOptions() {
   try {
-    const contextRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    // 1) Fetch the categories sheet instead of evaluations
+    const contextRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/categories`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
     const contextData = await contextRes.json();
     const values = contextData.values || [];
-    const contextOptions = [...new Set(values.slice(1).map(row => row[9]).filter(Boolean))].sort();
+
+    // 2) Find the index of the "Context Select" column in the header row
+    const headers = values[0] || [];
+    const idx = headers.indexOf("Context Select");
+    if (idx < 0) throw new Error(`"Context Select" column not found`);
+
+    // 3) Build the dropdown options from that column
+    const contextOptions = [
+      ...new Set(
+        values.slice(1)
+              .map(row => row[idx])
+              .filter(Boolean)
+      )
+    ].sort();
+
+    // 4) Render them into the <select>
     const dropdown = document.getElementById("evalContext");
     dropdown.innerHTML = '<option value="">Select Context</option>';
     contextOptions.forEach(opt => {
@@ -435,6 +470,16 @@ async function populateContextOptions() {
   <label for="evalContext"><strong>Context:</strong></label>
   <select id="evalContext">
     <option value="">Select Context</option>
+    <option value="Academic Policy">Academic Policy</option>
+    <option value="Assessment">Assessment</option>
+    <option value="Research">Research</option>
+    <option value="Administration">Administration</option>
+    <option value="Support Services">Support Services</option>
+    <option value="Infrastructure">Infrastructure</option>
+    <option value="Quality Assurance">Quality Assurance</option>
+    <option value="Teaching and Learning">Teaching and Learning</option>
+    <option value="Community Engagement">Community Engagement</option>
+    <option value="Other">Other</option>
   </select>
 
   <p><strong>Relevance:</strong><br>
