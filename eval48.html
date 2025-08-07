@@ -55,7 +55,7 @@ async function populateContextOptions() {
     });
     const contextData = await contextRes.json();
     const values = contextData.values || [];
-    const contextOptions = [...new Set(values.slice(1).map(row => row[10]).filter(Boolean))].sort();
+    const contextOptions = [...new Set(values.slice(1).map(row => row[9]).filter(Boolean))].sort();
     const dropdown = document.getElementById("evalContext");
     dropdown.innerHTML = '<option value="">Select Context</option>';
     contextOptions.forEach(opt => {
@@ -418,12 +418,29 @@ function toggleEvaluation() {
 
 async function populateContextOptions() {
   try {
-    const contextRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/evaluations`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    // 1) Fetch the categories sheet instead of evaluations
+    const contextRes = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/categories`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
     const contextData = await contextRes.json();
     const values = contextData.values || [];
-    const contextOptions = [...new Set(values.slice(1).map(row => row[9]).filter(Boolean))].sort();
+
+    // 2) Find the index of the "Context Select" column in the header row
+    const headers = values[0] || [];
+    const idx = headers.indexOf("Context Select");
+    if (idx < 0) throw new Error(`"Context Select" column not found`);
+
+    // 3) Build the dropdown options from that column
+    const contextOptions = [
+      ...new Set(
+        values.slice(1)
+              .map(row => row[idx])
+              .filter(Boolean)
+      )
+    ].sort();
+
+    // 4) Render them into the <select>
     const dropdown = document.getElementById("evalContext");
     dropdown.innerHTML = '<option value="">Select Context</option>';
     contextOptions.forEach(opt => {
