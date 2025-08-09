@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>BCQView — Viewer v1.0</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- ===== Inlined BCQ Theme (same look & feel as Admin/Evaluation) ===== -->
+  <style>
+    /* ===== Design tokens ===== */
+    :root{
+      --bg: #ffffff; /* viewer uses flat white */
+      --surface: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #3b82f6;
+      --primary-ink: #ffffff;
+      --primary-600: #2563eb;
+      --ring: rgba(59,130,246,.35);
+      --warn: #f59e0b; --success:#10b981; --danger:#ef4444;
+      --radius: 12px; --radius-sm:8px; --radius-lg:16px;
+      --shadow: 0 1px 2px rgba(0,0,0,.06), 0 6px 16px rgba(0,0,0,.06);
+      --sans: Calibri, Arial, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --title-bg: #e3e3e3;
+      --space-1:.5rem; --space-2:1rem; --space-3:1.5rem; --space-4:2rem;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0b1020; --surface:#121a2e; --text:#e5e7eb; --muted:#9aa3b2; --border:#1f2a44; --primary:#60a5fa; --primary-ink:#0b1020; --primary-600:#3b82f6; --ring: rgba(96,165,250,.45); --shadow: 0 1px 2px rgba(0,0,0,.45), 0 6px 16px rgba(0,0,0,.35); --title-bg:#19233d }
+      img.logo{filter: brightness(.95) contrast(1.05)}
+    }
+
+    /* ===== Base ===== */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{ font-family: var(--sans); color:var(--text); background: var(--bg); font-size:16px; line-height:1.55; margin:0 }
+    a{color:var(--primary);text-decoration:none}
+    a:hover{text-decoration:underline}
+    hr{border:0;border-top:1px solid var(--border);margin: var(--space-3) 0}
+
+    /* ===== Header / Banner (matches your reference) ===== */
+    .app-header{ position:relative; display:block; padding:0; border-bottom:1px solid var(--border); background: var(--surface) }
+    .logo{ float:left; height:auto; max-height:100px; width:auto; margin:1em; border-radius:0; background-color:#fff }
+    .page-title{ text-align:center; background-color:var(--title-bg); margin:0; padding:.75em 0; font-size:28px; font-weight:bold; clear:both }
+
+    /* ===== Layout ===== */
+    .container{ max-width:1200px; margin: var(--space-2) auto var(--space-3); padding: 0 var(--space-2) }
+    .button-container{ margin-top:10px; text-align:center; clear:both }
+
+    /* ===== Buttons & inputs ===== */
+    button, select{
+      font: inherit; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+      padding: .6rem .9rem; line-height:1; transition: box-shadow .15s ease, border-color .15s ease, background .15s ease, transform .06s ease;
+    }
+    button{ background: linear-gradient(180deg, var(--primary), var(--primary-600)); color: var(--primary-ink); border:0; box-shadow: 0 1px 0 rgba(255,255,255,.15) inset, 0 4px 10px rgba(59,130,246,.25) }
+    button:hover{ transform: translateY(-1px) }
+    button:active{ transform: translateY(0) }
+    button:disabled{ opacity:.6; cursor:not-allowed }
+
+    select{ min-width:160px; padding-right:2rem; appearance:none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: right 12px top 55%, right 6px top 55%; background-size:6px 6px, 6px 6px; background-repeat:no-repeat }
+
+    /* Focus ring parity */
+    :where(button, select, [contenteditable="true"]):focus{ outline:none; box-shadow: 0 0 0 4px var(--ring) }
+
+    /* ===== Toolbar / Filters ===== */
+    #filtersSection{ display:flex; flex-wrap:wrap; gap:.75rem 1rem; align-items:center; justify-content:center; padding:.9rem 1rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin:1rem auto 0; max-width:1200px }
+    #filtersSection label{ color:var(--muted); font-weight:600; margin-right:.25rem }
+
+    /* ===== Tables ===== */
+    #tableContainer{ overflow-x:auto; margin:1rem 0 0 }
+    table{ border-collapse:separate; border-spacing:0; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow) }
+    thead th{ position:sticky; top:0; z-index:1; background: linear-gradient(180deg, rgba(0,0,0,.02), transparent), var(--surface); text-align:left; font-weight:700; font-size:.92rem }
+    th,td{ padding:.75rem .9rem; border-bottom:1px solid var(--border); vertical-align:top }
+    tbody tr:nth-child(even){ background: rgba(0,0,0,.02) }
+    tbody tr:hover{ background: rgba(59,130,246,.06) }
+    td button{ padding:.45rem .7rem; min-width:unset; box-shadow:none; border-radius:8px }
+
+    /* Long-text cells */
+    td.intent, td.assertions, td.impact, td.evidence{ padding:0 }
+    td.intent div, td.assertions div, td.impact div, td.evidence div{ background:transparent; border:1px dashed var(--border); border-radius:8px; padding:.55rem .65rem; min-height:44px; line-height:1.45; overflow-y:auto; max-height:160px }
+    td.intent div:hover, td.assertions div:hover, td.impact div:hover, td.evidence div:hover{ border-color: rgba(59,130,246,.45) }
+  </style>
+</head>
+<body class="bcq-plain-bg">
+  <header class="app-header">
+    <img src="bcquality.jpeg" alt="BC Quality Logo" class="logo" />
+    <h1 class="page-title">Belgium Campus Quality Repository - VIEWER v1.0</h1>
+  </header>
+
+  <main class="container">
+    <div class="button-container">
+      <button id="authButton">🔐 Sign in with Google</button>
+    </div>
+
+    <div id="filtersSection">
+      <label for="filterDomain">Domain:</label>
+      <select id="filterDomain"><option value="">All</option></select>
+
+      <label for="filterTheme">Theme:</label>
+      <select id="filterTheme" disabled><option value="">All</option></select>
+
+      <label for="filterDocument">Document:</label>
+      <select id="filterDocument" disabled><option value="">All</option></select>
+    </div>
+
+    <div id="tableContainer"></div>
+  </main>
+
+  <script>
+    const clientId = '566030013012-fp4pfljo6t586lo83dq7cdf7umcs07td.apps.googleusercontent.com';
+    const sheetId = '1kSctyDuy35alQsG_vN7FswSs2wKGNmk2T-N1MJWYQvI';
+    const sheetName = 'documents';
+    let accessToken = '';
+
+    function renderTable(data) {
+      const container = document.getElementById("tableContainer");
+      container.innerHTML = "";
+
+      const table = document.createElement("table");
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement("tr");
+      data[0].forEach(h => {
+        const th = document.createElement("th");
+        th.textContent = (h || '').trim();
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      data.slice(1).forEach(rowData => {
+        const tr = document.createElement("tr");
+        (rowData || []).forEach((cell, colIndex) => {
+          const td = document.createElement("td");
+          const headerText = data[0][colIndex]?.trim();
+          const cleanCell = (cell || "").trim();
+
+          if (headerText === "Intent") td.classList.add("intent");
+          if (headerText === "Assertions") td.classList.add("assertions");
+          if (headerText === "Impact") td.classList.add("impact");
+          if (headerText === "Evidence") td.classList.add("evidence");
+
+          if (headerText === "Link" && cleanCell.startsWith("https://")) {
+            const btn = document.createElement("button");
+            btn.textContent = "🔗 Open Link";
+            btn.onclick = () => window.open(cleanCell, '_blank');
+            btn.dataset.link = cleanCell;
+            td.appendChild(btn);
+          } else {
+            if (["Intent", "Assertions", "Impact", "Evidence"].includes(headerText)) {
+              const div = document.createElement("div");
+              div.contentEditable = "true";
+              div.textContent = cleanCell;
+              td.appendChild(div);
+            } else {
+              td.contentEditable = "true";
+              td.textContent = cleanCell;
+            }
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      container.appendChild(table);
+    }
+
+    function setupFilters(data) {
+      const domainSelect = document.getElementById("filterDomain");
+      const themeSelect = document.getElementById("filterTheme");
+      const documentSelect = document.getElementById("filterDocument");
+
+      const headers = data[0];
+      const domainIndex = headers.indexOf("Domain");
+      const themeIndex = headers.indexOf("Theme");
+      const documentIndex = headers.indexOf("Document");
+      const rows = data.slice(1);
+
+      const domains = [...new Set(rows.map(r => r[domainIndex]).filter(Boolean))];
+      domains.sort().forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = d;
+        domainSelect.appendChild(opt);
+      });
+
+      function updateThemes(domain) {
+        themeSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        themeSelect.disabled = true;
+        if (!domain) return;
+
+        const themes = [...new Set(rows.filter(r => r[domainIndex] === domain).map(r => r[themeIndex]).filter(Boolean))];
+        themes.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          themeSelect.appendChild(opt);
+        });
+        themeSelect.disabled = false;
+      }
+
+      function updateDocuments(domain, theme) {
+        documentSelect.innerHTML = '<option value="">All</option>';
+        documentSelect.disabled = true;
+        if (!domain || !theme) return;
+
+        const documents = [...new Set(rows.filter(r =>
+          r[domainIndex] === domain && r[themeIndex] === theme
+        ).map(r => r[documentIndex]).filter(Boolean))];
+        documents.sort().forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = t;
+          documentSelect.appendChild(opt);
+        });
+        documentSelect.disabled = false;
+      }
+
+      function filterData() {
+        const domain = domainSelect.value;
+        const theme = themeSelect.value;
+        const document = documentSelect.value;
+        const filtered = [headers, ...rows.filter(row => {
+          if (domain && row[domainIndex] !== domain) return false;
+          if (theme && row[themeIndex] !== theme) return false;
+          if (document && row[documentIndex] !== document) return false;
+          return true;
+        })];
+        renderTable(filtered);
+      }
+
+      domainSelect.addEventListener("change", () => {
+        updateThemes(domainSelect.value);
+        filterData();
+      });
+      themeSelect.addEventListener("change", () => {
+        updateDocuments(domainSelect.value, themeSelect.value);
+        filterData();
+      });
+      documentSelect.addEventListener("change", filterData);
+    }
+
+    document.getElementById("authButton").addEventListener("click", () => {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: tokenResponse => {
+          accessToken = tokenResponse.access_token;
+          loadSheet();
+        }
+      });
+      tokenClient.requestAccessToken();
+    });
+
+    async function loadSheet() {
+      try {
+        const docRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const docData = await docRes.json();
+        const allData = docData.values || [];
+
+        setupFilters(allData);
+        renderTable(allData);
+      } catch (err) {
+        console.error("Error loading sheet:", err);
+        alert("\u26a0\ufe0f Failed to load data.");
+      }
+    }
+  </script>
+</body>
+</html>
