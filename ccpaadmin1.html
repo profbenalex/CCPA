@@ -59,7 +59,7 @@
       <h2 style="margin-right:12px;">🎯 Filter &amp; Submit</h2>
       <div class="row-controls">
         <select id="claimSelector">
-          <option value="ALL" selected="selected">ALL Members</option>
+          <option value="ALL" selected="selected">FULL Register</option>
           <option value="REPS">Members ONLY</option>
           <option value="A27|AdamsI">A27 AdamsI</option>
           <option value="A460|AdamsMF">A460 AdamsMF</option>
@@ -459,7 +459,7 @@ document.getElementById("blankRowBtn").addEventListener("click", () => {
     if (value === "ALL") {
       labelText = "Showing ALL Members";
     } else if (value === "REPS") {
-      filtered = fullData.filter(row => row.mType === "Claim Representative");
+      filtered = fullData.filter(row => row.mType === "Member");
       labelText = "Showing Claim Representatives ONLY";
       showDummyRow = true;
     } else {
